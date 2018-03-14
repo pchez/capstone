@@ -125,9 +125,15 @@ void train(int train_mode, char* fann_input, char* fann_output) {
     ann = fann_create_standard(num_layers, num_input, num_neurons_hidden, num_output);
     fann_set_activation_function_hidden(ann, FANN_SIGMOID_SYMMETRIC);
     fann_set_activation_function_output(ann, FANN_SIGMOID_SYMMETRIC);
+<<<<<<< HEAD
     fann_train_on_file(ann, fann_input, max_epochs, epochs_between_reports, desired_error);
     fann_save(ann, fann_output);
     fann_destroy(ann);
+=======
+//    fann_train_on_file(ann, fann_input, max_epochs, epochs_between_reports, desired_error);
+  //  fann_save(ann, fann_output);
+   // fann_destroy(ann);
+>>>>>>> 322a02e5e497995dd4e29fff97a12eaf5c6c1325
 
     printf("Finished training.\n"); 
     
