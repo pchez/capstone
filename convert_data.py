@@ -11,17 +11,18 @@ def getTimestamp(timestamp_raw):
 # Converts raw bytes to floating point for each sensor's axes.
 def getMotion(accel_raw, gyro_raw, mag_raw):
     accel, gyro, mag = {}, {}, {}
-    
+    MAX = 1024
+
     # Convert from 2-byte hex value to signed short, for each sensor
     for axis in accel_raw.keys():
         accel_string = accel_raw[axis][0] + accel_raw[axis][1]
-        accel[axis] = struct.unpack('<h', accel_string.decode('hex'))[0]
+        accel[axis] = struct.unpack('<h', accel_string.decode('hex'))[0] / MAX
     for axis in gyro_raw.keys():
         gyro_string = gyro_raw[axis][0] + gyro_raw[axis][1]
-        gyro[axis] = struct.unpack('<h', gyro_string.decode('hex'))[0]
+        gyro[axis] = struct.unpack('<h', gyro_string.decode('hex'))[0] / MAX
     for axis in mag_raw.keys():
         mag_string = mag_raw[axis][0] + mag_raw[axis][1]
-        mag[axis] = struct.unpack('<h', mag_string.decode('hex'))[0]
+        mag[axis] = struct.unpack('<h', mag_string.decode('hex'))[0] / MAX
     
     return accel, gyro, mag
 
