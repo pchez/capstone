@@ -1,195 +1,131 @@
-#include <string.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/wait.h>
+// Created by Priscilla Cheng 3/26/2018
+//
 #include <stdlib.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <fcntl.h>
-#include <poll.h>
-#include "fann/src/include/fann.h"
-#include "fann/src/include/floatfann.h"
-#define EXPECTED_NUM_ARGS 2
-#define DEBUG 1
-#define NUM_MODES 1
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <complex.h>
+#include <liquid/liquid.h>
+#include <unistd.h>
+#include "main.h"
+#include "dsp.h"
+#include "helpers.h"
 
-int data_collected_flag = 0;
-pid_t child_pid, parent_pid; 
-char** trainingPrompts[NUM_MODES];
-int numTrainingSteps[NUM_MODES] = {6};
+const int BUFF_MAX = 256;
 
-enum train_mode {
-    POSITION  // Basic training using all 3 axes of each sensor, output is a position 
-};
-
-
-void exitHandler(char* err_string, int exit_code) {
-    fprintf(stderr, "exitHandler: %s\n", err_string);
-    kill(child_pid, SIGTERM);        
-    exit(exit_code);
-}
-
-void sigHandler(int signum) {
-    if (signum == SIGUSR1) {
-        data_collected_flag = 1;
-    }
-    if (signum == SIGSEGV) {
-        exitHandler("Caught SIGSEGV, exiting child processes", -2);
-    }
-    if (signum == SIGINT) {
-        exitHandler("Caught SIGINT, exiting child processes", 0);
-    }
-}
+const char SIGNAL_AX[] = "tempfile_ax.txt";
+const char SIGNAL_AY[] = "tempfile_ay.txt";
+const char SIGNAL_AZ[] = "tempfile_az.txt";
+const char SIGNAL_GX[] = "tempfile_gx.txt";
+const char SIGNAL_GY[] = "tempfile_gy.txt";
+const char SIGNAL_GZ[] = "tempfile_gz.txt";
+const char SIGNAL_MX[] = "tempfile_mx.txt";
+const char SIGNAL_MY[] = "tempfile_my.txt";
+const char SIGNAL_MZ[] = "tempfile_mz.txt";
 
 
-void train(int train_mode, char* fann_input, char* fann_output) {
-    int num_steps = numTrainingSteps[train_mode];
-    int status;
-    int sigwait_result;
-    int sig;
-    int i, nbytes;
-    sigset_t signal_set;
-    char ppid_string[8];
-    int pipefd[2];
-    char buf[1024];
-    int revent[1];
+int main(int argc, char *argv[]) {	
 
-    // Fann variables initialization
-    const unsigned int num_input = 6;
-    const unsigned int num_output = 1;
-    const unsigned int num_layers = 3;
-    const unsigned int num_neurons_hidden = 3;
-    const float desired_error = (const float) 0.001;
-    const unsigned int max_epochs = 500000;
-    const unsigned int epochs_between_reports = 1000;
-    struct fann *ann;
-   
-    // Set up signal set and signal handling
-    sigemptyset(&signal_set);
-    sigaddset(&signal_set, SIGUSR1);
-    sigprocmask(SIG_BLOCK, &signal_set, NULL);
-    signal(SIGSEGV, sigHandler);
-    signal(SIGINT, sigHandler);
+	float norm_cutoff;
+	float norm_centerf;
+	float t_start, t_stop;
+	float rms_signal;
+	unsigned int size;
+	char * input_file = "motion_data.dat";
+	int n_cycles;
+	int cycle_count;
 
-    // Initialize pipe and polling between parent and child
-    pipe(pipefd);
-    struct pollfd fds[] = {
-        {pipefd[0], POLLIN, revent[1]}
-    };
+	//
+	// Following input request applies to bandpass filter implementation requiring 
+	// specification of center frequency
+	//
+	
+    	// if(argc != 6 ){
+    	// printf("Please provide cutoff frequency, center frequency, lower time limit and upper time limit for RMS computation and number of measurement cycles.\n");
+	//	 return 0;
+    	// }
 
-    // Initiate data collection from SensorTile via bluetooth command in shell script
-    child_pid = fork();
-    if (child_pid == -1) {
-        exitHandler("Fork error", -1);
-    }
-    if (child_pid == 0) { 
-        parent_pid = (long) getppid();
-        
-        sprintf(ppid_string, "%ld", parent_pid);
-        //printf("parent_pid: %s\n", ppid_string);
-        printf("Data collection process started with PID: %ld\n", (long) getpid());
-        
-        dup2(pipefd[1], STDOUT_FILENO);
-        close(pipefd[0]);
-        close(pipefd[1]);
+	// norm_cutoff = atof(argv[1]);
+	// norm_centerf = atof(argv[2]);
+	// t_start = atof(argv[3]);
+	// t_stop = atof(argv[4]);
+	// n_cycles = atoi(argv[5]);
 
-        execlp("./collect_data.sh", "./collect_data.sh",  ppid_string, (char*) NULL); //, fann_input_name);
-        do {
-            exitHandler("execlp error", -2);
-        } while(0);
-    
-    }
-    else {
-        close(pipefd[1]);
-        //printf("Poll for child input\n");
-        sleep(1);
-        for (i=0; i < num_steps; i++) {
-            //printf("sending SIGUSR1 to %ld\n", child_pid);
-            printf("%s %s\n", trainingPrompts[train_mode][i], "Press ENTER to continue.");
-            getchar();
-            kill(child_pid, SIGUSR1);    
-            //printf("before sigwait\n");
-            sigwait_result = sigwait(&signal_set, &sig); 
-            //printf("Got SIGUSR1\n");
 
-        }     
-    }
-    // Add first line according to fann training file format: [#samples][#inputs][#outputs]
-    // TODO count the number of samples
-    int num_samples = 482;
-    sprintf(buf, "sed -i '1i %d %d %d' %s", num_samples, num_input, num_output, fann_input);
-    system(buf);
-    printf("Finished collecting and converting data.\n");
-    
-    printf("Training...\n");
-    ann = fann_create_standard(num_layers, num_input, num_neurons_hidden, num_output);
-    fann_set_activation_function_hidden(ann, FANN_SIGMOID_SYMMETRIC);
-    fann_set_activation_function_output(ann, FANN_SIGMOID_SYMMETRIC);
-    fann_train_on_file(ann, fann_input, max_epochs, epochs_between_reports, desired_error);
-    fann_save(ann, fann_output);
-    fann_destroy(ann);
+	//
+	// Following input request applies to low pass filter implementation requiring 
+	// specification of center frequency
+	//	
+					
+	if(argc != 3 ){
+		printf("Please provide cutoff frequency and number of measurement cycles\n");
+		return 0;
+		}
+		
+	norm_cutoff = atof(argv[1]);
+	norm_centerf = 0.0;
+	n_cycles = atoi(argv[2]);
 
-    printf("Finished training.\n"); 
-    
-}
+	//
+	// Acquire 10 second data stream at 20 Hz sampling rate
+	//
+	// Note: motion_data.sh must be executing with filename argument 
+	// of sensor_data_stream.dat
+	//
+	//
 
-void initPrompts(char*** trainingPrompts) {
-    int mode, step;
+	cycle_count = 0;
 
-    // Allocate mem for strings
-    for (mode=0; mode < NUM_MODES; mode++) {
-        trainingPrompts[mode] = (char**) malloc(numTrainingSteps[mode] * sizeof(char)); 
-        for (step=0; step < numTrainingSteps[mode]; step++) {
-            trainingPrompts[mode][step] = (char*) malloc(1024);
-        }
-    }
-    trainingPrompts[POSITION][0] = "Place sensor face up.";
-    trainingPrompts[POSITION][1] = "Place sensor face down.";
-    trainingPrompts[POSITION][2] = "Tilt sensor 90deg upwards.";
-    trainingPrompts[POSITION][3] = "Tilt sensor 90deg downwards.";
-    trainingPrompts[POSITION][4] = "Tilt sensor 90deg to the right.";
-    trainingPrompts[POSITION][5] = "Tilt sensor 90deg to the left.";
-    
-}
+	while(cycle_count < n_cycles ) {
 
-void test(int mode, struct fann* ann, fann_type* output_label) {
-    kill(child_pid, SIGUSR2);
-    
-    //output_label = fann_run(ann, input);
-    
-}
+	cycle_count++;
 
-int main(int argc, char** argv) {
-    // TODO: use optarg
-    int mode = 0;
-    char* fann_input = NULL;
-    char* fann_output = NULL;
-    fann_type* output_label;
-    fann_type input[2];
-    struct fann* ann;
-    
-    if (argc < EXPECTED_NUM_ARGS) {
-        exitHandler("Usage: ./auto_fann_train --[training mode]", -1);
-    }
-    else {
-        mode = atoi(argv[1]);
-        fann_input = "motion_converted.txt";
-        fann_output = "fann_output.net";
-    }
+	printf("Acquire 10 second sample in cycle %i of %i \n", cycle_count, n_cycles);
 
-    // Initialize training prompt texts
-    initPrompts(trainingPrompts);
+	system("sh motion_data.sh -t 10 -f sensor_data_stream.dat");
 
-    // Get mode we are trying to train for, collect
-    train(mode, fann_input, fann_output);
-   
-    // Validate learning
-    ann = fann_create_from_file(fann_output);
-    printf("Test system:\n");
-    sleep(1);
-    while(1) {
-        test(mode, ann, output_label);
-    }
+	system("tail -n 199 sensor_data_stream.dat > motion_data.dat");
 
-    return 0;
+	size = BLE_parse(input_file);
+	if(size == 0){
+			printf("ERROR (stream_parser): BLE Data formatted incorrectly.\n");
+		    	return 0;
+    	}
+
+	printf(" Number of samples acquired =  %i \n", size);
+
+
+    	// Filter Documentation:
+    	// http://liquidsdr.org/doc/iirdes/
+
+    	struct filter_options ellip;
+    	ellip.order =   4;       // filter order
+    	ellip.fc    =   norm_cutoff;    // cutoff frequency
+    	ellip.f0    =   norm_centerf;    // center frequency
+    	ellip.Ap    =   3.0f;    // pass-band ripple
+    	ellip.As    =   60.0f;   // stop-band attenuation
+    	ellip.ftype  = LIQUID_IIRDES_ELLIP;
+    	ellip.btype  = LIQUID_IIRDES_LOWPASS;
+    	ellip.format = LIQUID_IIRDES_SOS;
+
+    	filter(SIGNAL_AX,size,ellip);
+    	filter(SIGNAL_AY,size,ellip);
+    	filter(SIGNAL_AZ,size,ellip);
+
+	t_start = SAMPLE_PERIOD;;
+	t_stop  = size*SAMPLE_PERIOD;
+	
+	rms_comp(SIGNAL_AX,size,&t_start, &t_stop, &rms_signal);
+
+	printf(" RMS signal amplitude over time window t_start %f to t_step %f = %f\n", t_start, t_stop, rms_signal);
+
+	makeCSV(size);
+
+	printf(" Filtered motion data for cycle written to output data file\n");
+
+	cleanup();
+
+	}
+
+    	return 0;
 }
