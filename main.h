@@ -1,19 +1,19 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-extern const char SIGNAL_AX[];
-extern const char SIGNAL_AY[];
-extern const char SIGNAL_AZ[];
-extern const char SIGNAL_GX[];
-extern const char SIGNAL_GY[];
-extern const char SIGNAL_GZ[];
-extern const char SIGNAL_MX[];
-extern const char SIGNAL_MY[];
-extern const char SIGNAL_MZ[];
+extern char SIGNAL_AX[];
+extern char SIGNAL_AY[];
+extern char SIGNAL_AZ[];
+extern char SIGNAL_GX[];
+extern char SIGNAL_GY[];
+extern char SIGNAL_GZ[];
+extern char SIGNAL_MX[];
+extern char SIGNAL_MY[];
+extern char SIGNAL_MZ[];
 
-extern const int BUFF_MAX;
-
+#define BUFF_MAX 256
 #define OUTPUT_FILE "motion_data_output.csv"
 #define SAMPLE_PERIOD 0.050
-
+#define SAMPLES_PER_CYCLE 50
+#define CYCLE_LENGTH 5
 #endif

@@ -106,38 +106,41 @@ int stream_parser(char raw[BUFF_MAX]) {
     
     int y;
 	int index;
-   	index = 0; 
-    for(y = 0; y < 10; y++){
-		switch(y){
+   	float val;
+    index = 0; 
+    for(y = 0; y < 10; y++) {
+		val = (float)(hex_to_decimal_4bit(&data[index]));
+
+        switch(y) {
 			case 0:
 				//sensortile.timestamp = hex_to_decimal_time(&data[y]);
 				break;
 			case 1:
-				fprintf(out_ax, "%f\n", (float)(hex_to_decimal_4bit(&data[index]))); 
+				fprintf(out_ax, "%f\n", val); 
 				break;
 			case 2:
-				fprintf(out_ay, "%f\n", (float)(hex_to_decimal_4bit(&data[index]))); 
+				fprintf(out_ay, "%f\n", val); 
 				break;
 			case 3:
-				fprintf(out_az, "%f\n", (float)(hex_to_decimal_4bit(&data[index]))); 
+				fprintf(out_az, "%f\n", val); 
 				break;
 			case 4:
-				fprintf(out_gx, "%f\n", (float)(hex_to_decimal_4bit(&data[index])));
+				fprintf(out_gx, "%f\n", val);
 				break;
 			case 5:
-				fprintf(out_gy, "%f\n", (float)(hex_to_decimal_4bit(&data[index])));
+				fprintf(out_gy, "%f\n", val);
 				break;
 			case 6: 
-				fprintf(out_gz, "%f\n", (float)(hex_to_decimal_4bit(&data[index])));
+				fprintf(out_gz, "%f\n", val);
 				break;
 			case 7:
-				fprintf(out_mx, "%f\n", (float)(hex_to_decimal_4bit(&data[index])));
+				fprintf(out_mx, "%f\n", val);
 				break;
 			case 8:
-				fprintf(out_my, "%f\n", (float)(hex_to_decimal_4bit(&data[index])));
+				fprintf(out_my, "%f\n", val);
 				break;
 			case 9: 
-				fprintf(out_mz, "%f\n", (float)(hex_to_decimal_4bit(&data[index])));
+				fprintf(out_mz, "%f\n", val);
 				break;
 			default:
 				return 0;
@@ -238,7 +241,6 @@ void makeCSV(unsigned int size) {
     fclose(out_my);
     fclose(out_mz);
 }
-
 
 void cleanup() {
 
