@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
         system(call_shell_script);
         system(call_tail);
 
-        size = BLE_parse(input_file);
+        size = BLE_parse(input_file, TRAIN_MODE);
         if(size == 0){
             printf("ERROR (stream_parser): BLE Data formatted incorrectly.\n");
             return 0;

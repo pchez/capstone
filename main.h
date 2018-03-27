@@ -16,4 +16,7 @@ extern char SIGNAL_MZ[];
 #define SAMPLE_PERIOD 0.050
 #define SAMPLES_PER_CYCLE 50
 #define CYCLE_LENGTH 5
+
+#define TRAIN_MODE 0
+#define TEST_MODE 1
 #endif

@@ -6,7 +6,7 @@
 #include <liquid/liquid.h>
 #include <unistd.h>
 #include "main.h"
-#include "prep_train_data.h"
+#include "preprocessing.h"
 #include "helpers.h"
 
 void normalize(float* data) {
@@ -19,6 +19,45 @@ char* encode(int cycle_count, int nclasses) {
     arr[cycle_count] = 1;
     sprintf(buf, "%d %d %d %d %d %d", arr[0], arr[1], arr[2], arr[3], arr[4], arr[5]);
     return buf;
+}
+
+void compute_average(unsigned int size, float* outbuf) {
+
+    FILE * out_ax = fopen(SIGNAL_AX,"r");
+    FILE * out_ay = fopen(SIGNAL_AY,"r");
+    FILE * out_az = fopen(SIGNAL_AZ,"r");
+
+    unsigned int i;
+    float ax,ay,az;
+    float ax_avg = 0;
+    float ay_avg = 0;
+    float az_avg = 0;
+    for(i=0; i<size; ++i) {
+    
+        fscanf(out_ax,"%f",&ax);
+        fscanf(out_ay,"%f",&ay);
+        fscanf(out_az,"%f",&az);
+        
+        ax_avg += ax;
+        ay_avg += ay;
+        az_avg += az;
+    }
+
+    ax_avg /= size;
+    ay_avg /= size;
+    az_avg /= size;
+   
+    normalize(&ax_avg);
+    normalize(&ay_avg);
+    normalize(&az_avg);
+
+    outbuf[0] = ax_avg;
+    outbuf[1] = ay_avg;
+    outbuf[2] = az_avg;
+    
+    fclose(out_ax);
+    fclose(out_ay);
+    fclose(out_az);
 }
 
 void make_train_file(unsigned int size, int cycle_count, int nclasses) {

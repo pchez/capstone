@@ -163,19 +163,20 @@ int stream_parser(char raw[BUFF_MAX]) {
     return 1;
 }      
 
-unsigned int BLE_parse(const char *inFile) {
+unsigned int BLE_parse(const char *inFile, int mode) {
 	FILE* ble_file;
 	ble_file = fopen(inFile, "r");
 
 	char raw[BUFF_MAX];
 
-	//
+	// Only when training
 	// Advance line over first line of file 
 	// since first line of file may be concatenated 
 	// or may contain header
 	//
 
-	fgets(raw, BUFF_MAX, ble_file);
+	if (mode == TRAIN_MODE)
+        fgets(raw, BUFF_MAX, ble_file);
 
 	// Read motion data
 
