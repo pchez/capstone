@@ -10,7 +10,7 @@
 #include "main.h"
 #include "dsp.h"
 #include "helpers.h"
-#include "prep_train_data.h"
+#include "preprocessing.h"
 
 char SIGNAL_AX[] = "tempfile_ax.txt";
 char SIGNAL_AY[] = "tempfile_ay.txt";
@@ -64,10 +64,11 @@ int main(int argc, char *argv[]) {
 	float rms_signal;
 	unsigned int size;
 	char * input_file = "motion_data.dat";
-	int n_cycles;
-	int cycle_count;
+	int n_cycles, cycle_count; 
+    int total_num_samples = 0;
     char call_shell_script[128];
     char call_tail[128];
+    char buf[128];
 
 	if(argc != 3){
 		printf("Please provide cutoff frequency, number of measurement cycles, and cycle duration\n");
@@ -107,7 +108,7 @@ int main(int argc, char *argv[]) {
         }
 
         printf(" Number of samples acquired =  %i \n", size);
-
+        total_num_samples += size;
         
         // Filter Documentation:
         // http://liquidsdr.org/doc/iirdes/
@@ -133,7 +134,7 @@ int main(int argc, char *argv[]) {
         printf(" RMS signal amplitude over time window t_start %f to t_step %f = %f\n", t_start, t_stop, rms_signal);
 
         make_train_file(size, cycle_count, n_cycles);
-
+        
         printf(" Filtered motion data for cycle written to output data file\n");
         
         cycle_count++;
@@ -141,7 +142,9 @@ int main(int argc, char *argv[]) {
         cleanup();
 
 	}
+    // Modify train file with number of samples actually collected
+    sprintf(buf, "sed -i 's/placeholder/%d/g' motion_data_output.csv", total_num_samples);
+    system(buf);
 
     return 0;
-        system("tail -n 199 sensor_data_stream.dat > motion_data.dat");
 }

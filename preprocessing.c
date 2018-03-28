@@ -15,7 +15,8 @@ void normalize(float* data) {
 
 char* encode(int cycle_count, int nclasses) {
     char* buf = (char*) malloc(30);
-    uint8_t* arr = (uint8_t*) calloc(nclasses, sizeof(uint8_t));
+    int8_t* arr = (int8_t*) malloc(nclasses * sizeof(int8_t));
+    memset(arr, 0, nclasses * sizeof(int8_t));
     arr[cycle_count] = 1;
     sprintf(buf, "%d %d %d %d %d %d", arr[0], arr[1], arr[2], arr[3], arr[4], arr[5]);
     return buf;
@@ -64,14 +65,15 @@ void make_train_file(unsigned int size, int cycle_count, int nclasses) {
 	FILE * output;
     char* encoded_output;
 
+    // Write header to first line
     if (cycle_count == 0) {
         output = fopen(OUTPUT_FILE, "w");
-        fprintf(output, "%d %d %d\n", SAMPLES_PER_CYCLE * nclasses, 3, nclasses);  
+        fprintf(output, "%s %d %d\n", "placeholder", 3, nclasses);  
     }
     else {
         output = fopen(OUTPUT_FILE, "a");
     } 
-
+    
 	FILE * out_ax = fopen(SIGNAL_AX,"r");
     FILE * out_ay = fopen(SIGNAL_AY,"r");
     FILE * out_az = fopen(SIGNAL_AZ,"r");

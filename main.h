@@ -14,8 +14,8 @@ extern char SIGNAL_MZ[];
 #define BUFF_MAX 256
 #define OUTPUT_FILE "motion_data_output.csv"
 #define SAMPLE_PERIOD 0.050
-#define SAMPLES_PER_CYCLE 50
-#define CYCLE_LENGTH 5
+#define SAMPLES_PER_CYCLE 199
+#define CYCLE_LENGTH 3
 
 #define TRAIN_MODE 0
 #define TEST_MODE 1
