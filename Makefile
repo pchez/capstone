@@ -3,14 +3,23 @@ CFLAGS=-c
 SOURCES=dsp.c helpers.c preprocessing.c
 OBJECTS=$(SOURCES:.c=.o)
 
-autotrain: train.o $(OBJECTS)
-	$(CC) -o autotrain train.o $(OBJECTS) -lm -lc -lliquid
+autotrain: autotrain.o $(OBJECTS)
+	$(CC) -o autotrain autotrain.o $(OBJECTS) -lm -lc -lliquid
+
+collect: collect.o $(OBJECTS)
+	$(CC) -o collect collect.o $(OBJECTS) -lm -lc -lliquid
 
 train:
-	$(CC) -o train train_fann.c -lm -lfann
+	$(CC) -o train train.c -lm -lfann
 
 test: test.o $(OBJECTS) 
 	$(CC) -o test test.o $(OBJECTS) -lm -lc -lfann -lliquid
+
+autotrain.o: autotrain.c
+	$(CC) $(CFLAGS) autotrain.c
+
+collect.o: collect.c
+	$(CC) $(CFLAGS) collect.c
 
 test.o: test.c
 	$(CC) $(CFLAGS) test.c
