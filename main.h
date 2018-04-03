@@ -16,6 +16,10 @@ extern char SIGNAL_MZ[];
 #define SAMPLE_PERIOD 0.050
 #define SAMPLES_PER_CYCLE 199
 #define CYCLE_LENGTH 3
+#define WINDOW_SIZE 30
+#define FFT_SIZE (2 * WINDOW_SIZE)
+#define NUM_LABELS 3
+#define NUM_INPUTS 6
 
 #define TRAIN_MODE 0
 #define TEST_MODE 1

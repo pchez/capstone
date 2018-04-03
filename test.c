@@ -16,8 +16,8 @@
 #include "dsp.h"
 #include "helpers.h"
 #include "preprocessing.h"
-#include "fann/src/include/fann.h"
-#include "fann/src/include/floatfann.h"
+#include "../fann/src/include/fann.h"
+#include "../fann/src/include/floatfann.h"
 
 char SIGNAL_AX[] = "tempfile_ax.txt";
 char SIGNAL_AY[] = "tempfile_ay.txt";
@@ -50,30 +50,41 @@ void sigHandler(int signum) {
 }
 
 int main(int argc, char *argv[]) {	
+    // FANN
     fann_type *calc_out;
-    fann_type input[3];
+    fann_type input[NUM_INPUTS];
     struct fann *ann;
     struct fann_train_data *data;
 	
+    // DSP
     float norm_cutoff;
 	float norm_centerf;
 	float t_start, t_stop;
-	float rms_signal;
+	float rms_signal[3];
 	unsigned int size;
-	char * input_file = "motion_data.dat";
-	int n_cycles;
+	int method = 0;
+
+    // main
+    char * input_file = "motion_data.dat";
+	float** sensors_buf;
+    float complex** fft_buf;
+    int n_cycles;
 	int cycle_count;
+    int num_sensors = 1;
     char call_shell_script[128];
     char call_tail[128];
+    float max;
+    int i;
 
+    // IPC
     int sigwait_result;
     int sig;
-    int i, nbytes, result;
-    float max;
+    int nbytes, result;
     sigset_t signal_set;
     char ppid_string[8];
     int pipefd[2];
     short revent[1];
+    
     // Set up signal set and signal handling
     sigemptyset(&signal_set);
     sigaddset(&signal_set, SIGUSR1);
@@ -86,8 +97,6 @@ int main(int argc, char *argv[]) {
     struct pollfd fds[] = {
         {pipefd[0], POLLIN, revent[1]}
     };
-
-    signal(SIGINT, sigHandler);
 
     ann = fann_create_from_file("fann_output.net");
     if (!ann) {
@@ -120,29 +129,55 @@ int main(int argc, char *argv[]) {
     else {
         close(pipefd[1]);
         
+        // initialize buffer to hold sensor values
+        initSensorsBuf(&sensors_buf, &fft_buf, num_sensors);
+
         while (run) {
-            
+            printf("Collect data...\n");            
             kill(child_pid, SIGUSR1);   
             sigwait_result = sigwait(&signal_set, &sig);
 
-            size = BLE_parse(input_file, TEST_MODE);
+            printf("before clear buf\n");
+            clearSensorsBuf(&sensors_buf, &fft_buf, num_sensors);
+            printf("before ble parse\n");
+            size = BLE_parse(input_file, TEST_MODE, num_sensors, sensors_buf);
+            printf("after ble parse\n");
             if(size == 0){
                 printf("ERROR (stream_parser): BLE Data formatted incorrectly.\n");
             }
             else {
+                // compute avg
                 compute_average(size, input);
+                
+                // compute rms
+                t_start = SAMPLE_PERIOD;
+                t_stop = size * SAMPLE_PERIOD;
+                rms_comp(SIGNAL_AX, size, &t_start, &t_stop, &input[0]);
+                rms_comp(SIGNAL_AY, size, &t_start, &t_stop, &input[1]);
+                rms_comp(SIGNAL_AZ, size, &t_start, &t_stop, &input[2]);
+
+                // compute fft
+                fft_comp(sensors_buf[0], fft_buf[0], WINDOW_SIZE, FFT_SIZE);
+                fft_comp(sensors_buf[1], fft_buf[1], WINDOW_SIZE, FFT_SIZE);
+                fft_comp(sensors_buf[2], fft_buf[2], WINDOW_SIZE, FFT_SIZE);
+                // get freq from fft
+                input[3] = getFreq(fft_buf[0], FFT_SIZE);
+                input[4] = getFreq(fft_buf[1], FFT_SIZE);
+                input[5] = getFreq(fft_buf[2], FFT_SIZE);
+
                 calc_out = fann_run(ann, input);
-                printf("%f %f %f\n", input[0], input[1], input[2]);
+                printf("%f %f %f %f %f %f\n", input[0], input[1], input[2], input[3], input[4], input[5]);
+
                 max = -5.0;
                 result = 0;
-                for (i=0; i<6; i++) {
+                for (i=0; i<NUM_LABELS; i++) {
                     if (calc_out[i] > max) {
                         max = calc_out[i];
                         result = i;
                     }
                 }    
                 printf("result: %d\n", result);
-                printf("result: %f %f %f %f %f %f\n", calc_out[0], calc_out[1], calc_out[2], calc_out[3], calc_out[4], calc_out[5]);
+                printf("result: %f %f %f\n", calc_out[0], calc_out[1], calc_out[2]);
                         
             }
 

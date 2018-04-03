@@ -103,4 +103,37 @@ void rms_comp(const char *signal, unsigned int n_samples, float * t_start, float
         fclose(fp);
 }
 
+void fft_comp(float* orig_buf, float complex* fft_buf, int window_size, int fft_size) {
+    int i; 
+    for (i=0; i<FFT_SIZE; i++) {
+        fft_buf[i] = (float)i - _Complex_I * (float)i;
+    }
 
+    fftplan pf = fft_create_plan(FFT_SIZE, (float complex*) orig_buf, fft_buf, LIQUID_FFT_FORWARD, 0); 
+    
+    fft_print_plan(pf); // print fft plans
+   
+    fft_execute(pf); //execute fft plans
+
+    fft_destroy_plan(pf); //destroy fft plans
+
+}
+
+float getFreq(float complex* fft_buf, int fft_size) {
+    float max = -5.0;
+    int max_index = 0;
+    float abs_fft = 0.0;
+    int i;    
+    for (i=0; i<fft_size; i++) {
+        abs_fft = sqrt(pow(crealf(fft_buf[i]),2) + pow(cimagf(fft_buf[i]),2));
+        if (abs_fft > max) {
+            max = abs_fft;
+            max_index = i;
+        }
+    }
+    float freq = (float)max_index * (1.0/SAMPLE_PERIOD) / (float)FFT_SIZE;
+    printf("index of max %d\n", max_index);
+    printf("frequency %f\n", freq);
+
+    return freq; 
+}

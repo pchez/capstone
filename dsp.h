@@ -12,3 +12,5 @@ struct filter_options {
 
 void filter(const char *signal, unsigned int n_samples, struct filter_options options);
 void rms_comp(const char *signal, unsigned int n_samples, float * t_start, float * t_stop, float * rms_signal);
+void fft_comp(float* orig_buf, float complex* fft_buf, int window_size, int fft_size);
+float getFreq(float complex* fft_buf, int fft_size);
