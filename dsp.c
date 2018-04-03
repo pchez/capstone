@@ -46,10 +46,34 @@ void filter(const char *signal, unsigned int n_samples, struct filter_options op
     	fclose(frewrite);
 }
 
+float findMax(float* buf, int buf_size, int* index) {
+    int i;
+    float max = -500000.0;
+    int max_index = 0;
+    for (i=0; i<buf_size; i++) {
+        if (buf[i] > max) {
+            max = buf[i];
+            max_index = i;
+        }
+    }
+    *index = max_index;
+    return max;
+}
 
-void rms_comp(const char *signal, unsigned int n_samples, float * t_start, float * t_stop, float * rms_signal) {
+void normalize_buf(float* buf, int buf_size) {
+    int index = 0;
+    float max;
+    int i;
+    for (i=0; i<buf_size; i++) {
+        max = findMax(buf, buf_size, &index);
+        if (max != 0) 
+           buf[i] = buf[i] / max;
+    }
+}
 
-	float x[n_samples];
+void rms_comp(float* signal, unsigned int n_samples, float * t_start, float * t_stop, float * rms_signal) {
+
+	//float x[n_samples];
 	float num;
 	unsigned int i;
 	float sample_time;
@@ -59,12 +83,12 @@ void rms_comp(const char *signal, unsigned int n_samples, float * t_start, float
 
 	sample_period = SAMPLE_PERIOD;
 
-	FILE *fp = fopen(signal,"r");
-
-        if(fp == 0){
-                printf("INVALID FILE (filter)\n");
-                return;
-        }
+//	FILE *fp = fopen(signal,"r");
+//
+//        if(fp == 0){
+//                printf("INVALID FILE (filter)\n");
+//                return;
+//        }
 
 	sample_time = 0;
 	signal_mean = 0;
@@ -72,14 +96,14 @@ void rms_comp(const char *signal, unsigned int n_samples, float * t_start, float
 	//
 	// Compute mean signal
 	//
-        for (i=0; i<n_samples; i++){
-                sample_time = sample_time + sample_period;
-		if (sample_time > * t_start && sample_time < * t_stop){
-			fscanf(fp,"%f",&num);
-                	x[sample_count] = num;
-			signal_mean = signal_mean + x[sample_count];
-			sample_count++;
-		}
+    for (i=0; i<n_samples; i++) {
+        sample_time = sample_time + sample_period;
+        if (sample_time > *t_start && sample_time < *t_stop) {
+            //fscanf(fp,"%f",&num);
+            //x[sample_count] = num;
+            signal_mean = signal_mean + signal[sample_count];
+            sample_count++;
+        }
 	}
 
 	sample_count--;
@@ -93,14 +117,14 @@ void rms_comp(const char *signal, unsigned int n_samples, float * t_start, float
 	// 
 
 	*rms_signal = 0;
-        for (i=0; i<sample_count; i++){
-		x[i] = x[i] - signal_mean;
-		*rms_signal = *rms_signal + x[i]*x[i];
-        }
+    for (i=0; i<sample_count; i++) {
+		signal[i] = signal[i] - signal_mean;
+		*rms_signal = *rms_signal + signal[i]*signal[i];
+    }
 
 	*rms_signal = (float)(*rms_signal)/sample_count;
 	*rms_signal = (float)sqrt(*rms_signal);
-        fclose(fp);
+    //fclose(fp);
 }
 
 void fft_comp(float* orig_buf, float complex* fft_buf, int window_size, int fft_size) {
@@ -111,7 +135,7 @@ void fft_comp(float* orig_buf, float complex* fft_buf, int window_size, int fft_
 
     fftplan pf = fft_create_plan(FFT_SIZE, (float complex*) orig_buf, fft_buf, LIQUID_FFT_FORWARD, 0); 
     
-    fft_print_plan(pf); // print fft plans
+    //fft_print_plan(pf); // print fft plans
    
     fft_execute(pf); //execute fft plans
 

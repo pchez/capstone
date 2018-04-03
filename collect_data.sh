@@ -20,7 +20,7 @@ collectData()
     gatttool -b C0:85:40:31:4D:48 -t random --char-write-req --handle=0x0012 --value=0100 --listen > sensor_data_stream.dat &
     sleep $TIME
 
-    tail -n 1 sensor_data_stream.dat > motion_data.dat
+    tail -n 50 sensor_data_stream.dat > motion_data.dat
     errcho $PARENT_PID
     kill -USR1 $PARENT_PID
     

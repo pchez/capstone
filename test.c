@@ -47,6 +47,9 @@ void sigHandler(int signum) {
     if (signum == SIGINT) {
         exitHandler("Caught SIGINT, exiting child processes\n", 0);    
     }
+    if (signum == SIGSEGV) {
+        exitHandler("Segmentation fault, exiting\n", -2);
+    }
 }
 
 int main(int argc, char *argv[]) {	
@@ -120,7 +123,7 @@ int main(int argc, char *argv[]) {
         close(pipefd[0]);
         close(pipefd[1]);
 
-        execlp("./collect_data.sh", "./collect_data.sh", "-t", "1", "-p", ppid_string, (char*) NULL); //, fann_input_name);
+        execlp("./collect_data.sh", "./collect_data.sh", "-t", "2", "-p", ppid_string, (char*) NULL); //, fann_input_name);
         do {
             exitHandler("execlp error", -2);
         } while(0);
@@ -133,30 +136,27 @@ int main(int argc, char *argv[]) {
         initSensorsBuf(&sensors_buf, &fft_buf, num_sensors);
 
         while (run) {
-            printf("Collect data...\n");            
             kill(child_pid, SIGUSR1);   
             sigwait_result = sigwait(&signal_set, &sig);
-
-            printf("before clear buf\n");
-            clearSensorsBuf(&sensors_buf, &fft_buf, num_sensors);
-            printf("before ble parse\n");
+            clearSensorsBuf(sensors_buf, fft_buf, num_sensors);
             size = BLE_parse(input_file, TEST_MODE, num_sensors, sensors_buf);
-            printf("after ble parse\n");
             if(size == 0){
                 printf("ERROR (stream_parser): BLE Data formatted incorrectly.\n");
             }
             else {
-                // compute avg
-                compute_average(size, input);
-                
                 // compute rms
                 t_start = SAMPLE_PERIOD;
                 t_stop = size * SAMPLE_PERIOD;
-                rms_comp(SIGNAL_AX, size, &t_start, &t_stop, &input[0]);
-                rms_comp(SIGNAL_AY, size, &t_start, &t_stop, &input[1]);
-                rms_comp(SIGNAL_AZ, size, &t_start, &t_stop, &input[2]);
+                rms_comp(sensors_buf[0], size, &t_start, &t_stop, &rms_signal[0]);
+                rms_comp(sensors_buf[1], size, &t_start, &t_stop, &rms_signal[1]);
+                rms_comp(sensors_buf[2], size, &t_start, &t_stop, &rms_signal[2]);
+                normalize_buf(rms_signal, 3);
 
-                // compute fft
+                input[0] = rms_signal[0];
+                input[1] = rms_signal[1];
+                input[2] = rms_signal[2];
+                
+                //compute fft
                 fft_comp(sensors_buf[0], fft_buf[0], WINDOW_SIZE, FFT_SIZE);
                 fft_comp(sensors_buf[1], fft_buf[1], WINDOW_SIZE, FFT_SIZE);
                 fft_comp(sensors_buf[2], fft_buf[2], WINDOW_SIZE, FFT_SIZE);
@@ -181,7 +181,6 @@ int main(int argc, char *argv[]) {
                         
             }
 
-            cleanup();
         }
 
     }

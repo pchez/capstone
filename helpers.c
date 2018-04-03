@@ -79,43 +79,43 @@ void initSensorsBuf(float*** sensors_buf, float complex*** fft_buf, int num_sens
     // 0 1 2 accel; 3 4 5 gyro; 6 7 8 mag
     float** sbuf;
     float complex** fbuf;
-    *sbuf = (float**) malloc(sizeof(float*) * num_sensors * 6);
-    *fbuf = (float complex**) malloc(sizeof(float complex*) * num_sensors * 3);
+    sbuf = (float**) malloc(sizeof(float*) * num_sensors * 3);
+    fbuf = (float complex**) malloc(sizeof(float complex*) * num_sensors * 3);
     
     // allocate memory for all sensor buffers
     int i;
     for (i=0; i<num_sensors*3; i++) {
-        *sbuf[i] = (float*) malloc(sizeof(float) * WINDOW_SIZE);
-        *fbuf[i] = (float complex*) malloc(sizeof(float complex) * FFT_SIZE);
+        sbuf[i] = (float*) malloc(sizeof(float) * WINDOW_SIZE);
+        fbuf[i] = (float complex*) malloc(sizeof(float complex) * FFT_SIZE);
     }
     *sensors_buf = sbuf;
     *fft_buf = fbuf;
 }
 
-void clearSensorsBuf(float*** sensors_buf, float complex*** fft_buf, int num_sensors) {
+void clearSensorsBuf(float** sensors_buf, float complex** fft_buf, int num_sensors) {
     if (num_sensors >= 1) {
-        memset(*sensors_buf[0], 0, WINDOW_SIZE * sizeof(float)); 
-        memset(*sensors_buf[1], 0, WINDOW_SIZE * sizeof(float)); 
-        memset(*sensors_buf[2], 0, WINDOW_SIZE * sizeof(float)); 
-        memset(*fft_buf[0], 0, FFT_SIZE); 
-        memset(*fft_buf[1], 0, FFT_SIZE); 
-        memset(*fft_buf[2], 0, FFT_SIZE); 
+        memset(sensors_buf[0], 0, WINDOW_SIZE * sizeof(float)); 
+        memset(sensors_buf[1], 0, WINDOW_SIZE * sizeof(float)); 
+        memset(sensors_buf[2], 0, WINDOW_SIZE * sizeof(float)); 
+        memset(fft_buf[0], 0, FFT_SIZE); 
+        memset(fft_buf[1], 0, FFT_SIZE); 
+        memset(fft_buf[2], 0, FFT_SIZE); 
     }
     if (num_sensors >= 2) {
-        memset(*sensors_buf[3], 0, WINDOW_SIZE); 
-        memset(*sensors_buf[4], 0, WINDOW_SIZE); 
-        memset(*sensors_buf[5], 0, WINDOW_SIZE); 
-        memset(*fft_buf[3], 0, FFT_SIZE); 
-        memset(*fft_buf[4], 0, FFT_SIZE); 
-        memset(*fft_buf[5], 0, FFT_SIZE); 
+        memset(sensors_buf[3], 0, WINDOW_SIZE); 
+        memset(sensors_buf[4], 0, WINDOW_SIZE); 
+        memset(sensors_buf[5], 0, WINDOW_SIZE); 
+        memset(fft_buf[3], 0, FFT_SIZE); 
+        memset(fft_buf[4], 0, FFT_SIZE); 
+        memset(fft_buf[5], 0, FFT_SIZE); 
     }
     if (num_sensors >= 3) {
-        memset(*sensors_buf[6], 0, WINDOW_SIZE); 
-        memset(*sensors_buf[7], 0, WINDOW_SIZE); 
-        memset(*sensors_buf[8], 0, WINDOW_SIZE); 
-        memset(*fft_buf[6], 0, FFT_SIZE); 
-        memset(*fft_buf[7], 0, FFT_SIZE); 
-        memset(*fft_buf[8], 0, FFT_SIZE); 
+        memset(sensors_buf[6], 0, WINDOW_SIZE); 
+        memset(sensors_buf[7], 0, WINDOW_SIZE); 
+        memset(sensors_buf[8], 0, WINDOW_SIZE); 
+        memset(fft_buf[6], 0, FFT_SIZE); 
+        memset(fft_buf[7], 0, FFT_SIZE); 
+        memset(fft_buf[8], 0, FFT_SIZE); 
     }
 }
 
@@ -136,7 +136,6 @@ int stream_parser(char raw[BUFF_MAX], int num_sensors, float** sensors_buf, int 
 		}
         ptr++;
     }
-    
     if (num_sensors >= 1) { // accel only
         sensors_buf[0][index] = (float)(hex_to_decimal_4bit(&data[0]));
         sensors_buf[1][index] = (float)(hex_to_decimal_4bit(&data[1]));
@@ -152,7 +151,7 @@ int stream_parser(char raw[BUFF_MAX], int num_sensors, float** sensors_buf, int 
         sensors_buf[7][index] = (float)(hex_to_decimal_4bit(&data[7]));
         sensors_buf[8][index] = (float)(hex_to_decimal_4bit(&data[8]));
     }
-     
+    return 1; 
 }
 
 int stream_to_file(char raw[BUFF_MAX]) {
@@ -267,10 +266,8 @@ unsigned int BLE_parse(const char *inFile, int mode, int num_sensors, float** se
     }
     else {
         // fill buffer until full or no more data avail
-	    printf("before fgets\n");
         while(fgets(raw, BUFF_MAX, ble_file) && iter < WINDOW_SIZE){
 		    if(stream_parser(raw, num_sensors, sensors_buf, iter) == 0) return 0;
-		    printf("%d\n", iter);
             iter++;
 	    }
 
