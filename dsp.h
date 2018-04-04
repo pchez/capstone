@@ -14,5 +14,7 @@ void filter(const char *signal, unsigned int n_samples, struct filter_options op
 float findMax(float* buf, int buf_size, int* index);
 void normalize_buf(float* buf, int buf_size);
 void rms_comp(float *signal, unsigned int n_samples, float * t_start, float * t_stop, float * rms_signal);
+float compute_mean(float* sensors_buf);
+void remove_dc(float* sensors_buf);
 void fft_comp(float* orig_buf, float complex* fft_buf, int window_size, int fft_size);
 float getFreq(float complex* fft_buf, int fft_size);

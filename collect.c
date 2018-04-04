@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
 
 	system("tail -n 199 sensor_data_stream.dat > motion_data.dat");
 
-	size = BLE_parse(input_file, TEST_MODE);
+	size = BLE_parse(input_file, TRAIN_MODE, 1, NULL);
 	if(size == 0){
 			printf("ERROR (stream_parser): BLE Data formatted incorrectly.\n");
 		    	return 0;
@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
 	t_start = SAMPLE_PERIOD;;
 	t_stop  = size*SAMPLE_PERIOD;
 	
-	rms_comp(SIGNAL_AX,size,&t_start, &t_stop, &rms_signal);
+    //rms_comp(SIGNAL_AX,size,&t_start, &t_stop, &rms_signal);
 
 	printf(" RMS signal amplitude over time window t_start %f to t_step %f = %f\n", t_start, t_stop, rms_signal);
 

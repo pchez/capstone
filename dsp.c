@@ -64,8 +64,8 @@ void normalize_buf(float* buf, int buf_size) {
     int index = 0;
     float max;
     int i;
+    max = findMax(buf, buf_size, &index);
     for (i=0; i<buf_size; i++) {
-        max = findMax(buf, buf_size, &index);
         if (max != 0) 
            buf[i] = buf[i] / max;
     }
@@ -79,7 +79,7 @@ void rms_comp(float* signal, unsigned int n_samples, float * t_start, float * t_
 	float sample_time;
 	float sample_period;
 	float signal_mean;
-	int sample_count;
+    int sample_count;
 
 	sample_period = SAMPLE_PERIOD;
 
@@ -117,9 +117,10 @@ void rms_comp(float* signal, unsigned int n_samples, float * t_start, float * t_
 	// 
 
 	*rms_signal = 0;
+    float signal_val;
     for (i=0; i<sample_count; i++) {
-		signal[i] = signal[i] - signal_mean;
-		*rms_signal = *rms_signal + signal[i]*signal[i];
+		signal_val = signal[i] - signal_mean;
+		*rms_signal = *rms_signal + signal_val*signal_val;
     }
 
 	*rms_signal = (float)(*rms_signal)/sample_count;
@@ -127,13 +128,35 @@ void rms_comp(float* signal, unsigned int n_samples, float * t_start, float * t_
     //fclose(fp);
 }
 
+float compute_mean(float* sensors_buf) {
+    int i;
+    int mean = 0.0;
+    for (i=0; i<WINDOW_SIZE; i++) {
+        if (sensors_buf[i] != 0.0) {
+            mean += sensors_buf[i];
+        }    
+    }
+    return mean / WINDOW_SIZE;
+}
+
+void remove_dc(float* sensors_buf) {
+    int i;
+    float mean = compute_mean(sensors_buf);
+    for (i=0; i<WINDOW_SIZE; i++) {
+        sensors_buf[i] = sensors_buf[i] - mean;    
+    }
+}
+
 void fft_comp(float* orig_buf, float complex* fft_buf, int window_size, int fft_size) {
     int i; 
-    for (i=0; i<FFT_SIZE; i++) {
-        fft_buf[i] = (float)i - _Complex_I * (float)i;
+    float complex * fc_buf = (float complex*) malloc(FFT_SIZE*sizeof(float complex));
+    memset(fc_buf, 0, FFT_SIZE);
+
+    for (i=0; i<window_size; i++) {
+        fc_buf[i] = orig_buf[i];
     }
 
-    fftplan pf = fft_create_plan(FFT_SIZE, (float complex*) orig_buf, fft_buf, LIQUID_FFT_FORWARD, 0); 
+    fftplan pf = fft_create_plan(FFT_SIZE, fc_buf, fft_buf, LIQUID_FFT_FORWARD, 0); 
     
     //fft_print_plan(pf); // print fft plans
    
@@ -147,17 +170,21 @@ float getFreq(float complex* fft_buf, int fft_size) {
     float max = -5.0;
     int max_index = 0;
     float abs_fft = 0.0;
-    int i;    
-    for (i=0; i<fft_size; i++) {
-        abs_fft = sqrt(pow(crealf(fft_buf[i]),2) + pow(cimagf(fft_buf[i]),2));
+    int i;   
+
+    // only need to search half of the fft bc symmetric 
+    for (i=0; i<fft_size/2; i++) {
+   //     abs_fft = sqrt(pow(crealf(fft_buf[i]),2) + pow(cimagf(fft_buf[i]),2));
+        abs_fft = cabsf(fft_buf[i]);
         if (abs_fft > max) {
             max = abs_fft;
             max_index = i;
         }
     }
     float freq = (float)max_index * (1.0/SAMPLE_PERIOD) / (float)FFT_SIZE;
-    printf("index of max %d\n", max_index);
-    printf("frequency %f\n", freq);
+    printf("index of max %d, frequency %f\n", max_index, freq);
 
     return freq; 
 }
+
+

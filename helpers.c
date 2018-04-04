@@ -128,6 +128,7 @@ int stream_parser(char raw[BUFF_MAX], int num_sensors, float** sensors_buf, int 
 	int iter = 0;
 	char data[40]; 
 	int lock = 0;
+
 	while(iter < 40 && ptr != NULL && *ptr != '\0' && *ptr != '\n') {
 		if(lock < 40 && *ptr != ' '){ 
 			data[iter] = *ptr;
@@ -137,19 +138,19 @@ int stream_parser(char raw[BUFF_MAX], int num_sensors, float** sensors_buf, int 
         ptr++;
     }
     if (num_sensors >= 1) { // accel only
-        sensors_buf[0][index] = (float)(hex_to_decimal_4bit(&data[0]));
-        sensors_buf[1][index] = (float)(hex_to_decimal_4bit(&data[1]));
-        sensors_buf[2][index] = (float)(hex_to_decimal_4bit(&data[2]));
+        sensors_buf[0][index] = (float)(hex_to_decimal_4bit(&data[1*4]));
+        sensors_buf[1][index] = (float)(hex_to_decimal_4bit(&data[2*4]));
+        sensors_buf[2][index] = (float)(hex_to_decimal_4bit(&data[3*4]));
     }
     if (num_sensors >= 2) { // gyro + accel
-        sensors_buf[3][index] = (float)(hex_to_decimal_4bit(&data[3]));
-        sensors_buf[4][index] = (float)(hex_to_decimal_4bit(&data[4]));
-        sensors_buf[5][index] = (float)(hex_to_decimal_4bit(&data[5]));
+        sensors_buf[3][index] = (float)(hex_to_decimal_4bit(&data[4*4]));
+        sensors_buf[4][index] = (float)(hex_to_decimal_4bit(&data[5*4]));
+        sensors_buf[5][index] = (float)(hex_to_decimal_4bit(&data[6*4]));
     }
     if (num_sensors >= 3) { // gyro + accel + mag
-        sensors_buf[6][index] = (float)(hex_to_decimal_4bit(&data[6]));
-        sensors_buf[7][index] = (float)(hex_to_decimal_4bit(&data[7]));
-        sensors_buf[8][index] = (float)(hex_to_decimal_4bit(&data[8]));
+        sensors_buf[6][index] = (float)(hex_to_decimal_4bit(&data[7*4]));
+        sensors_buf[7][index] = (float)(hex_to_decimal_4bit(&data[8*4]));
+        sensors_buf[8][index] = (float)(hex_to_decimal_4bit(&data[9*4]));
     }
     return 1; 
 }
@@ -249,8 +250,7 @@ unsigned int BLE_parse(const char *inFile, int mode, int num_sensors, float** se
 
 	char raw[BUFF_MAX];
 
-	// Only when training
-	// Advance line over first line of file 
+	// Advance line over first 2 lines of file during testing 
 	// since first line of file may be concatenated 
 	// or may contain header
 
@@ -266,6 +266,8 @@ unsigned int BLE_parse(const char *inFile, int mode, int num_sensors, float** se
     }
     else {
         // fill buffer until full or no more data avail
+        fgets(raw, BUFF_MAX, ble_file);
+        fgets(raw, BUFF_MAX, ble_file);
         while(fgets(raw, BUFF_MAX, ble_file) && iter < WINDOW_SIZE){
 		    if(stream_parser(raw, num_sensors, sensors_buf, iter) == 0) return 0;
             iter++;

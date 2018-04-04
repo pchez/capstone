@@ -138,8 +138,12 @@ int main(int argc, char *argv[]) {
         while (run) {
             kill(child_pid, SIGUSR1);   
             sigwait_result = sigwait(&signal_set, &sig);
+            
             clearSensorsBuf(sensors_buf, fft_buf, num_sensors);
+           
             size = BLE_parse(input_file, TEST_MODE, num_sensors, sensors_buf);
+            
+            
             if(size == 0){
                 printf("ERROR (stream_parser): BLE Data formatted incorrectly.\n");
             }
@@ -151,16 +155,31 @@ int main(int argc, char *argv[]) {
                 rms_comp(sensors_buf[1], size, &t_start, &t_stop, &rms_signal[1]);
                 rms_comp(sensors_buf[2], size, &t_start, &t_stop, &rms_signal[2]);
                 normalize_buf(rms_signal, 3);
-
+                
+                remove_dc(sensors_buf[0]);
+                remove_dc(sensors_buf[1]);
+                remove_dc(sensors_buf[2]);
+                
                 input[0] = rms_signal[0];
                 input[1] = rms_signal[1];
                 input[2] = rms_signal[2];
-                
+               
                 //compute fft
+                printf("compute fft\n");
                 fft_comp(sensors_buf[0], fft_buf[0], WINDOW_SIZE, FFT_SIZE);
                 fft_comp(sensors_buf[1], fft_buf[1], WINDOW_SIZE, FFT_SIZE);
                 fft_comp(sensors_buf[2], fft_buf[2], WINDOW_SIZE, FFT_SIZE);
+                //print fft
+                //for (i=0; i<FFT_SIZE; i++) {
+                //    printf("fft: %f %f %f\n", cabsf(fft_buf[0][i]), cabsf(fft_buf[1][i]), cabsf(fft_buf[2][i]));
+                //} 
                 // get freq from fft
+                
+                
+                 //print orig
+                for (i=0; i<WINDOW_SIZE; i++) {
+                    printf("orig: %f %f %f\n", sensors_buf[0][i], sensors_buf[1][i], sensors_buf[2][i]);
+                } 
                 input[3] = getFreq(fft_buf[0], FFT_SIZE);
                 input[4] = getFreq(fft_buf[1], FFT_SIZE);
                 input[5] = getFreq(fft_buf[2], FFT_SIZE);
