@@ -21,15 +21,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 int main(int argc, char** argv)
 {
-	const unsigned int num_input = 3;
-	const unsigned int num_output = 6;
+	const unsigned int num_input = 12;
+	const unsigned int num_output = 3;
 	const unsigned int num_layers = 3;
-	const unsigned int num_neurons_hidden = 3;
+	const unsigned int num_neurons_hidden = 6;
 	const float desired_error = (const float) 0.001;
 	const unsigned int max_epochs = 500000;
 	const unsigned int epochs_between_reports = 1000;
     char* train_file;
-	struct fann *ann = fann_create_standard(num_layers, num_input, num_neurons_hidden, num_output);
+	
+    struct fann *ann = fann_create_standard(num_layers, num_input, num_neurons_hidden, num_output);
 
 	fann_set_activation_function_hidden(ann, FANN_SIGMOID);
 	fann_set_activation_function_output(ann, FANN_SIGMOID);
@@ -40,7 +41,7 @@ int main(int argc, char** argv)
     else {
         train_file = argv[1];
     }
-	fann_train_on_file(ann, train_file, max_epochs, epochs_between_reports, desired_error);
+    fann_train_on_file(ann, train_file, max_epochs, epochs_between_reports, desired_error);
 
 	fann_save(ann, "fann_motion.net");
 

@@ -166,7 +166,7 @@ void fft_comp(float* orig_buf, float complex* fft_buf, int window_size, int fft_
 
 }
 
-float getFreq(float complex* fft_buf, int fft_size) {
+float get_freq(float complex* fft_buf, int fft_size) {
     float max = -5.0;
     int max_index = 0;
     float abs_fft = 0.0;
@@ -187,4 +187,42 @@ float getFreq(float complex* fft_buf, int fft_size) {
     return freq; 
 }
 
+float compute_corr(float* a, float* b) {
+    //cov(a,b)/(std(a)*std(b))
+    //compute covariance
+    float ab[WINDOW_SIZE];
+    int i;
+    for (i=0; i<WINDOW_SIZE; i++) {
+        ab[i] = a[i] * b[i];
+    }
 
+    float mean_a = compute_mean(a);
+    float mean_b = compute_mean(b);
+    float mean_ab = compute_mean(ab);
+    float cov = mean_ab - mean_a*mean_b;
+
+    //compute standard deviation
+    float std_a = 0.0;
+    float std_b = 0.0;
+    for (i=0; i<WINDOW_SIZE; i++) {
+        std_a = (a[i] - mean_a) * (a[i] - mean_a);
+        std_b = (b[i] - mean_b) * (b[i] - mean_b);
+    }
+    std_a = sqrt(std_a / WINDOW_SIZE);
+    std_b = sqrt(std_b / WINDOW_SIZE);
+    
+    //prevent division by zero
+    if (std_a == 0 || std_b == 0) {
+        return 0.0;
+    }
+    return cov / (std_a * std_b);
+}
+
+float compute_energy(float complex* fft_buf) {
+    int i;
+    float energy = 0;
+    for (i=0; i<WINDOW_SIZE; i++) {
+        energy += pow(cabsf(fft_buf[i]), 2);         
+    }
+    return energy / (float)WINDOW_SIZE;
+}
