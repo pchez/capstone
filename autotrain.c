@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
     fprintf(output, "%s %d %d\n", "placeholder", NUM_INPUTS, NUM_CLASSES);  
 
     for (class_index=0; class_index<NUM_CLASSES; class_index++) {    
-        print_instructions(class_index);
+        printf("Collecting data for class %d of %d. Press ENTER when ready.\n", class_index+1, NUM_CLASSES);
         getchar();
         
         for (cycle_count=0; cycle_count<n_cycles; cycle_count++) {    
@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
             }
             
             printf(" Number of samples acquired =  %i \n", size);
-            total_num_samples += size;
+            total_num_samples += 1;
         
             // Filter Documentation:
             // http://liquidsdr.org/doc/iirdes/
@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
            
             get_all_features(sensors_buf, fft_buf, input, NUM_SENSORS, &t_start, &t_stop);
 
-            update_train_file(output, input, cycle_count, class_index);
+            update_train_file(output, input, class_index, NUM_CLASSES);
                 
             }
         }

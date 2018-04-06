@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
         {pipefd[0], POLLIN, revent[1]}
     };
 
-    ann = fann_create_from_file("fann_basic.net");
+    ann = fann_create_from_file("fann_motion.net");
     if (!ann) {
         printf("Failed to create network\n");
         exit(1);
@@ -187,14 +187,14 @@ int main(int argc, char *argv[]) {
 
                 max = -5.0;
                 result = 0;
-                for (i=0; i<NUM_LABELS; i++) {
+                for (i=0; i<NUM_CLASSES; i++) {
                     if (calc_out[i] > max) {
                         max = calc_out[i];
                         result = i;
                     }
                 }    
                 printf("result: %d\n", result);
-                printf("result: %f %f %f\n", calc_out[0], calc_out[1], calc_out[2]);
+                printf("result: %f %f %f %f\n", calc_out[0], calc_out[1], calc_out[2], calc_out[3]);
                         
             }
 

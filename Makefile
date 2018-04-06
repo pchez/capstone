@@ -37,4 +37,4 @@ preprocessing.o: preprocessing.c
 	$(CC) $(CFLAGS) preprocessing.c
 
 clean:
-	rm *.o autotrain test train_fann
+	rm *.o autotrain test train
