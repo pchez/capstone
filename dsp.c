@@ -150,18 +150,21 @@ void remove_dc(float* sensors_buf) {
 void fft_comp(float* orig_buf, float complex* fft_buf, int window_size, int fft_size) {
     int i; 
     float complex * fc_buf = (float complex*) malloc(FFT_SIZE*sizeof(float complex));
-    memset(fc_buf, 0, FFT_SIZE);
+    memset(fc_buf, 0, FFT_SIZE * sizeof(float complex));
 
     for (i=0; i<window_size; i++) {
         fc_buf[i] = orig_buf[i];
     }
-
     fftplan pf = fft_create_plan(FFT_SIZE, fc_buf, fft_buf, LIQUID_FFT_FORWARD, 0); 
     
     //fft_print_plan(pf); // print fft plans
    
     fft_execute(pf); //execute fft plans
 
+    // scale/normalize fft
+    for (i=0; i<fft_size; i++) {
+        fft_buf[i] = fft_buf[i] / (float)FFT_SIZE;
+    }
     fft_destroy_plan(pf); //destroy fft plans
 
 }
@@ -182,7 +185,6 @@ float get_freq(float complex* fft_buf, int fft_size) {
         }
     }
     float freq = (float)max_index * (1.0/SAMPLE_PERIOD) / (float)FFT_SIZE;
-    printf("index of max %d, frequency %f\n", max_index, freq);
 
     return freq; 
 }
@@ -226,3 +228,4 @@ float compute_energy(float complex* fft_buf) {
     }
     return energy / (float)WINDOW_SIZE;
 }
+

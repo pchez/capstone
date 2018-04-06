@@ -3,6 +3,6 @@
 
 void normalize(float* data);
 void compute_average(unsigned int size, float* outbuf);
-void make_train_file(unsigned int size, int cycle_count, int ncycles);
+void update_train_file(FILE* output_file, float* input, int cycle_count, int ncycles);
 
 #endif

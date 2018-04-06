@@ -10,6 +10,7 @@ int stream_to_file(char raw[BUFF_MAX]);
 int stream_parser(char raw[BUFF_MAX], int num_sensors, float** sensors_buf, int index);
 unsigned int BLE_parse(const char *inFile, int mode, int num_sensors, float** sensors_buf);
 void makeCSV(unsigned int size);
+void get_all_features(float** sensors_buf, float complex** fft_buf, float* input, int num_sensors, float* t_start, float* t_stop);
 void cleanup();
 
 #endif

@@ -61,14 +61,18 @@ int main(int argc, char *argv[]) {
 	float norm_cutoff;
 	float norm_centerf;
 	float t_start, t_stop;
-	float rms_signal;
-	unsigned int size;
+	float rms_signal[3];
+	unsigned int size, i;
 	char * input_file = "motion_data.dat";
-	int n_cycles, cycle_count; 
+	int n_cycles, cycle_count, class_index; 
     int total_num_samples = 0;
     char call_shell_script[128];
     char call_tail[128];
     char buf[128];
+    float** sensors_buf;
+    float complex** fft_buf;
+    float input[NUM_INPUTS];
+    FILE* output;
 
 	if(argc != 3){
 		printf("Please provide cutoff frequency, number of measurement cycles, and cycle duration\n");
@@ -89,59 +93,62 @@ int main(int argc, char *argv[]) {
     sprintf(call_shell_script, "sh motion_data.sh -t %d -f sensor_data_stream.dat", CYCLE_LENGTH);
     sprintf(call_tail, "tail -n %d sensor_data_stream.dat > motion_data.dat", SAMPLES_PER_CYCLE);
 
-	cycle_count = 0;
+    initSensorsBuf(&sensors_buf, &fft_buf, NUM_SENSORS);
 
-	while (cycle_count < n_cycles ) {
+    // Write header to first line
+    output = fopen(OUTPUT_FILE, "w");
+    fprintf(output, "%s %d %d\n", "placeholder", NUM_INPUTS, NUM_CLASSES);  
 
-
-        printf("Cycle %i of %i \n", cycle_count + 1, n_cycles);
-        print_instructions(cycle_count);
+    for (class_index=0; class_index<NUM_CLASSES; class_index++) {    
+        print_instructions(class_index);
         getchar();
+        
+        for (cycle_count=0; cycle_count<n_cycles; cycle_count++) {    
 
-        system(call_shell_script);
-        system(call_tail);
+            clearSensorsBuf(sensors_buf, fft_buf, NUM_SENSORS);
 
-        size = BLE_parse(input_file, TRAIN_MODE, 0, NULL);
-        if(size == 0){
-            printf("ERROR (stream_parser): BLE Data formatted incorrectly.\n");
-            return 0;
+            printf("Cycle %i of %i \n", cycle_count + 1, n_cycles);
+
+            system(call_shell_script);
+            system(call_tail);
+
+            size = BLE_parse(input_file, TEST_MODE, NUM_SENSORS, sensors_buf);
+        
+            if(size == 0){
+                printf("ERROR (stream_parser): BLE Data formatted incorrectly.\n");
+                return 0;
+            }
+            
+            printf(" Number of samples acquired =  %i \n", size);
+            total_num_samples += size;
+        
+            // Filter Documentation:
+            // http://liquidsdr.org/doc/iirdes/
+            struct filter_options ellip;
+            ellip.order =   4;       // filter order
+            ellip.fc    =   norm_cutoff;    // cutoff frequency
+            ellip.f0    =   norm_centerf;    // center frequency
+            ellip.Ap    =   3.0f;    // pass-band ripple
+            ellip.As    =   60.0f;   // stop-band attenuation
+            ellip.ftype  = LIQUID_IIRDES_ELLIP;
+            ellip.btype  = LIQUID_IIRDES_LOWPASS;
+            ellip.format = LIQUID_IIRDES_SOS;
+
+            //filter(SIGNAL_AX,size,ellip);
+            //filter(SIGNAL_AY,size,ellip);
+            //filter(SIGNAL_AZ,size,ellip);
+
+            t_start = SAMPLE_PERIOD;;
+            t_stop  = size*SAMPLE_PERIOD;
+           
+            get_all_features(sensors_buf, fft_buf, input, NUM_SENSORS, &t_start, &t_stop);
+
+            update_train_file(output, input, cycle_count, class_index);
+                
+            }
         }
-
-        printf(" Number of samples acquired =  %i \n", size);
-        total_num_samples += size;
-        
-        // Filter Documentation:
-        // http://liquidsdr.org/doc/iirdes/
-        struct filter_options ellip;
-        ellip.order =   4;       // filter order
-        ellip.fc    =   norm_cutoff;    // cutoff frequency
-        ellip.f0    =   norm_centerf;    // center frequency
-        ellip.Ap    =   3.0f;    // pass-band ripple
-        ellip.As    =   60.0f;   // stop-band attenuation
-        ellip.ftype  = LIQUID_IIRDES_ELLIP;
-        ellip.btype  = LIQUID_IIRDES_LOWPASS;
-        ellip.format = LIQUID_IIRDES_SOS;
-
-        filter(SIGNAL_AX,size,ellip);
-        filter(SIGNAL_AY,size,ellip);
-        filter(SIGNAL_AZ,size,ellip);
-
-        t_start = SAMPLE_PERIOD;;
-        t_stop  = size*SAMPLE_PERIOD;
-        
-        rms_comp(SIGNAL_AX,size,&t_start, &t_stop, &rms_signal);
-
-        printf(" RMS signal amplitude over time window t_start %f to t_step %f = %f\n", t_start, t_stop, rms_signal);
-
-        make_train_file(size, cycle_count, n_cycles);
-        
-        printf(" Filtered motion data for cycle written to output data file\n");
-        
-        cycle_count++;
-        
-        cleanup();
-
-	}
+    fclose(output);
+    
     // Modify train file with number of samples actually collected
     sprintf(buf, "sed -i 's/placeholder/%d/g' motion_data_output.csv", total_num_samples);
     system(buf);

@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
         {pipefd[0], POLLIN, revent[1]}
     };
 
-    ann = fann_create_from_file("fann_output.net");
+    ann = fann_create_from_file("fann_basic.net");
     if (!ann) {
         printf("Failed to create network\n");
         exit(1);
@@ -162,20 +162,17 @@ int main(int argc, char *argv[]) {
                 input[0] = rms_signal[0] / 1024.0;
                 input[1] = rms_signal[1] / 1024.0;
                 input[2] = rms_signal[2] / 1024.0;
-                printf("before corr\n"); 
+                
                 // compute correlation: cov(a,b)/(std(a)*std(b))
                 input[3] = compute_corr(sensors_buf[0], sensors_buf[1]);
                 input[4] = compute_corr(sensors_buf[0], sensors_buf[2]);
                 input[5] = compute_corr(sensors_buf[1], sensors_buf[2]);
 
-                printf("before fft\n"); 
                 //compute fft and energy
-                printf("compute fft\n");
                 fft_comp(sensors_buf[0], fft_buf[0], WINDOW_SIZE, FFT_SIZE);
                 fft_comp(sensors_buf[1], fft_buf[1], WINDOW_SIZE, FFT_SIZE);
                 fft_comp(sensors_buf[2], fft_buf[2], WINDOW_SIZE, FFT_SIZE);
                 
-                printf("before energy\n"); 
                 input[6] = compute_energy(fft_buf[0]);               
                 input[7] = compute_energy(fft_buf[1]);               
                 input[8] = compute_energy(fft_buf[2]);               

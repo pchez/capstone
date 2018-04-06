@@ -18,8 +18,9 @@ extern char SIGNAL_MZ[];
 #define CYCLE_LENGTH 3
 #define WINDOW_SIZE 30
 #define FFT_SIZE (2 * WINDOW_SIZE)
-#define NUM_LABELS 3
+#define NUM_CLASSES 4
 #define NUM_INPUTS 12
+#define NUM_SENSORS 1
 
 #define TRAIN_MODE 0
 #define TEST_MODE 1

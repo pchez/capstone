@@ -12,6 +12,7 @@
 #include <complex.h>
 #include <liquid/liquid.h>
 #include <unistd.h>
+#include "dsp.h"
 #include "main.h"
 
 int char_to_decimal(char letter) {
@@ -256,19 +257,19 @@ unsigned int BLE_parse(const char *inFile, int mode, int num_sensors, float** se
 
 	unsigned int iter = 0;
 	if (mode == TRAIN_MODE) {
+        // fill buffer until full or no more data avail
         fgets(raw, BUFF_MAX, ble_file);
-
-	    // Read motion data
-	    while(fgets(raw, BUFF_MAX, ble_file)){
-		    if(stream_to_file(raw) == 0) return 0;
-		    iter++;
+        fgets(raw, BUFF_MAX, ble_file);
+        while(fgets(raw, BUFF_MAX, ble_file)) {
+		    if(stream_parser(raw, num_sensors, sensors_buf, iter) == 0) return 0;
+            iter++;
 	    }
     }
     else {
         // fill buffer until full or no more data avail
         fgets(raw, BUFF_MAX, ble_file);
         fgets(raw, BUFF_MAX, ble_file);
-        while(fgets(raw, BUFF_MAX, ble_file) && iter < WINDOW_SIZE){
+        while(fgets(raw, BUFF_MAX, ble_file) && iter < WINDOW_SIZE) {
 		    if(stream_parser(raw, num_sensors, sensors_buf, iter) == 0) return 0;
             iter++;
 	    }
@@ -332,6 +333,42 @@ void makeCSV(unsigned int size) {
     fclose(out_mz);
 }
 
+void get_all_features(float** sensors_buf, float complex** fft_buf, float* input, int num_sensors, float* t_start, float* t_stop) {
+    float rms_signal[3]; 
+    remove_dc(sensors_buf[0]);
+    remove_dc(sensors_buf[1]);
+    remove_dc(sensors_buf[2]);
+    
+    // compute rms
+    rms_comp(sensors_buf[0], WINDOW_SIZE, t_start, t_stop, &rms_signal[0]);
+    rms_comp(sensors_buf[1], WINDOW_SIZE, t_start, t_stop, &rms_signal[1]);
+    rms_comp(sensors_buf[2], WINDOW_SIZE, t_start, t_stop, &rms_signal[2]);
+    
+    input[0] = rms_signal[0] / 1024.0;
+    input[1] = rms_signal[1] / 1024.0;
+    input[2] = rms_signal[2] / 1024.0;
+    
+    // compute correlation: cov(a,b)/(std(a)*std(b))
+    input[3] = compute_corr(sensors_buf[0], sensors_buf[1]);
+    input[4] = compute_corr(sensors_buf[0], sensors_buf[2]);
+    input[5] = compute_corr(sensors_buf[1], sensors_buf[2]);
+
+    //compute fft and energy
+    fft_comp(sensors_buf[0], fft_buf[0], WINDOW_SIZE, FFT_SIZE);
+    fft_comp(sensors_buf[1], fft_buf[1], WINDOW_SIZE, FFT_SIZE);
+    fft_comp(sensors_buf[2], fft_buf[2], WINDOW_SIZE, FFT_SIZE);
+    
+//        //print original
+//        for (i=0; i<WINDOW_SIZE; i++) {
+//            printf("%f %f %f\n", crealf(fft_buf[0][i]), crealf(fft_buf[1][i]), crealf(fft_buf[2][i]));
+//        }    
+    input[6] = compute_energy(fft_buf[0]);               
+    input[7] = compute_energy(fft_buf[1]);               
+    input[8] = compute_energy(fft_buf[2]);               
+    input[9] = get_freq(fft_buf[0], FFT_SIZE);
+    input[10] = get_freq(fft_buf[1], FFT_SIZE);
+    input[11] = get_freq(fft_buf[2], FFT_SIZE);
+}
 void cleanup() {
 
 	if (remove(SIGNAL_AX) != 0)
