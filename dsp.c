@@ -128,18 +128,18 @@ void rms_comp(float* signal, unsigned int n_samples, float * t_start, float * t_
     //fclose(fp);
 }
 
-float compute_mean(float* sensors_buf) {
+float compute_mean(float* sensors_buf, int size) {
     int i;
     float mean = 0.0;
-    for (i=0; i<WINDOW_SIZE; i++) {
+    for (i=0; i<size; i++) {
         mean += sensors_buf[i];
     }
-    return mean / (float)WINDOW_SIZE;
+    return mean / (float)size;
 }
 
 void remove_dc(float* sensors_buf) {
     int i;
-    float mean = compute_mean(sensors_buf);
+    float mean = compute_mean(sensors_buf, WINDOW_SIZE);
     for (i=0; i<WINDOW_SIZE; i++) {
         sensors_buf[i] = sensors_buf[i] - mean;    
     }
@@ -187,6 +187,17 @@ float get_freq(float complex* fft_buf, int fft_size) {
     return freq; 
 }
 
+float compute_std(float* buf, int size) {
+    int i;
+    float std = 0.0;
+    float mean_buf = compute_mean(buf, size);
+    for (i=0; i<size; i++) {
+        std += (buf[i] - mean_buf) * (buf[i] - mean_buf);
+    }
+    std = sqrt(std / (float)size);
+    return std;
+}
+
 float compute_corr(float* a, float* b) {
     //cov(a,b)/(std(a)*std(b))
     //compute covariance
@@ -197,20 +208,14 @@ float compute_corr(float* a, float* b) {
         ab[i] = a[i] * b[i];
     }
 
-    float mean_a = compute_mean(a);
-    float mean_b = compute_mean(b);
-    float mean_ab = compute_mean(ab);
+    float mean_a = compute_mean(a, WINDOW_SIZE);
+    float mean_b = compute_mean(b, WINDOW_SIZE);
+    float mean_ab = compute_mean(ab, WINDOW_SIZE);
     float cov = mean_ab - mean_a*mean_b;
     
     //compute standard deviation
-    float std_a = 0.0;
-    float std_b = 0.0;
-    for (i=0; i<WINDOW_SIZE; i++) {
-        std_a += (a[i] - mean_a) * (a[i] - mean_a);
-        std_b += (b[i] - mean_b) * (b[i] - mean_b);
-    }
-    std_a = sqrt(std_a / (float)WINDOW_SIZE);
-    std_b = sqrt(std_b / (float)WINDOW_SIZE);
+    float std_a = compute_std(a, WINDOW_SIZE);
+    float std_b = compute_std(b, WINDOW_SIZE);
     
     //prevent division by zero
     if (std_a == 0 || std_b == 0) {
@@ -225,6 +230,6 @@ float compute_energy(float complex* fft_buf) {
     for (i=0; i<WINDOW_SIZE; i++) {
         energy += pow(cabsf(fft_buf[i]), 2);         
     }
-    return energy / (float)10000;
+    return energy / 10000.0;
 }
 

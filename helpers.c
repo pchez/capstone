@@ -352,9 +352,9 @@ void get_all_features(float** sensors_buf, float complex** fft_buf, float* input
     input[6] = compute_energy(fft_buf[0]);               
     input[7] = compute_energy(fft_buf[1]);               
     input[8] = compute_energy(fft_buf[2]);               
-    input[9] = get_freq(fft_buf[0], FFT_SIZE);
-    input[10] = get_freq(fft_buf[1], FFT_SIZE);
-    input[11] = get_freq(fft_buf[2], FFT_SIZE);
+    input[9] = compute_std(sensors_buf[0], WINDOW_SIZE) / 1000.0;
+    input[10] = compute_std(sensors_buf[1], WINDOW_SIZE) / 1000.0;
+    input[11] = compute_std(sensors_buf[2], WINDOW_SIZE) / 1000.0;
 }
 
 int detect_new_gesture(float** freq_buf, float* results_buf, int this_frame_index, float mse_threshold) {
@@ -376,23 +376,34 @@ int detect_new_gesture(float** freq_buf, float* results_buf, int this_frame_inde
         return 0;
     }
 
-    // then check if similar frequency maintained
+    float mean;
+    float std;
     for (i=0; i<num_bufs; i++) {
-
-        // get avg frequency for this axis
-        avg = 0;
-        for (j=0; j<HISTORY_SIZE; j++) {
-            avg += freq_buf[i][j];
-        }
-        avg /= (float)HISTORY_SIZE;
-
-        // compare this axis' frequency to avg. if below threshold, is periodic
-        if (fabs(freq_buf[i][this_frame_index] - avg) < FREQ_DIFF_THRESHOLD) {
-            printf("abs: %f threshold: %f\n",fabs(freq_buf[i][this_frame_index] - avg),FREQ_DIFF_THRESHOLD); 
+        std = compute_std(freq_buf[i], HISTORY_SIZE);
+        printf("mean freq: %f std: %f", mean, std);  
+       // if std dev below threshold, is periodic
+       if (std < STDDEV_THRESHOLD) {
             num_periodic++;
-        }
-
+       }
     }
+    printf("\n");
+//    // then check if similar frequency maintained
+//    for (i=0; i<num_bufs; i++) {
+//
+//        // get avg frequency for this axis
+//        avg = 0;
+//        for (j=0; j<HISTORY_SIZE; j++) {
+//            avg += freq_buf[i][j];
+//        }
+//        avg /= (float)HISTORY_SIZE;
+//
+//        // compare this axis' frequency to avg. if below threshold, is periodic
+//        if (fabs(freq_buf[i][this_frame_index] - avg) < FREQ_DIFF_THRESHOLD) {
+//            printf("abs: %f threshold: %f\n",fabs(freq_buf[i][this_frame_index] - avg),FREQ_DIFF_THRESHOLD); 
+//            num_periodic++;
+//        }
+//
+//    }
     
     // if not enough axes show periodicity, not a new gesture
     if (num_periodic < num_bufs-1) {

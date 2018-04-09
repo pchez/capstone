@@ -27,8 +27,9 @@ extern char SIGNAL_MZ[];
 #define NUM_SENSORS 1
 #define NUM_CYCLES 10
 
-#define MSE_THRESHOLD 0.003
+#define MSE_THRESHOLD 0.001
 #define FREQ_DIFF_THRESHOLD 0.3
+#define STDDEV_THRESHOLD 1.0
 
 #define DETECT_NEW_GESTURES_ON 1
 #define RUN_MODE 0x01
