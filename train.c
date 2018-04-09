@@ -18,6 +18,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include "fann.h"
+#include "main.h"
 
 int main(int argc, char** argv)
 {
@@ -36,7 +37,7 @@ int main(int argc, char** argv)
 	fann_set_activation_function_output(ann, FANN_SIGMOID);
 
     if (argc < 2) {
-        train_file = "motion_data_output.csv";
+        train_file = TRAIN_FILE;
     }
     else {
         train_file = argv[1];

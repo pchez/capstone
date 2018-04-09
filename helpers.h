@@ -11,7 +11,7 @@ int stream_parser(char raw[BUFF_MAX], int num_sensors, float** sensors_buf, int 
 unsigned int BLE_parse(const char *inFile, int mode, int num_sensors, float** sensors_buf);
 int prepare_train_file(int num_classes);
 void get_all_features(float** sensors_buf, float complex** fft_buf, float* input, int num_sensors, float* t_start, float* t_stop);
-int detect_new_gesture(float** freq_buf, float* results_buf, int this_frame_index);
+int detect_new_gesture(float** freq_buf, float* results_buf, int this_frame_index, float mse_threshold);
 void cleanup();
 
 #endif

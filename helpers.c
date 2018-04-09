@@ -357,18 +357,23 @@ void get_all_features(float** sensors_buf, float complex** fft_buf, float* input
     input[11] = get_freq(fft_buf[2], FFT_SIZE);
 }
 
-int detect_new_gesture(float** freq_buf, float* results_buf, int this_frame_index) {
+int detect_new_gesture(float** freq_buf, float* results_buf, int this_frame_index, float mse_threshold) {
     int num_bufs = NUM_SENSORS * 3;
     int i, j;
     float avg = 0.0;
     int count = 0;
-    int num_freq_above_threshold = 0;
+    int num_periodic = 0;
+    int num_mse_above_threshold = 0;
 
-    // first check for series of missclassifications
+    // first check for series of misclassifications
     for (i=0; i<HISTORY_SIZE; i++) {
-        if (results_buf[i] > OUTPUT_SCORE_THRESHOLD) {
-            return 0;
+        printf("%f\n", results_buf[i]);
+        if (results_buf[i] > mse_threshold) {
+            num_mse_above_threshold++;
         }
+    }
+    if (num_mse_above_threshold < HISTORY_SIZE-1) {
+        return 0;
     }
 
     // then check if similar frequency maintained
@@ -379,16 +384,18 @@ int detect_new_gesture(float** freq_buf, float* results_buf, int this_frame_inde
         for (j=0; j<HISTORY_SIZE; j++) {
             avg += freq_buf[i][j];
         }
-        avg /= HISTORY_SIZE;
+        avg /= (float)HISTORY_SIZE;
 
-        // compare this axis' frequency to avg
-        if (abs(freq_buf[i][this_frame_index] - avg) > FREQ_DIFF_THRESHOLD) {
-            num_freq_above_threshold++;
+        // compare this axis' frequency to avg. if below threshold, is periodic
+        if (fabs(freq_buf[i][this_frame_index] - avg) < FREQ_DIFF_THRESHOLD) {
+            printf("abs: %f threshold: %f\n",fabs(freq_buf[i][this_frame_index] - avg),FREQ_DIFF_THRESHOLD); 
+            num_periodic++;
         }
 
     }
-
-    if (num_freq_above_threshold > ceil(num_bufs / 2)) {
+    
+    // if not enough axes show periodicity, not a new gesture
+    if (num_periodic < num_bufs-1) {
         return 0;
     }
 

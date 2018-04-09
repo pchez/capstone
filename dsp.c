@@ -192,17 +192,16 @@ float compute_corr(float* a, float* b) {
     //compute covariance
     float ab[WINDOW_SIZE];
     int i;
-    printf("------------------\n");
+    
     for (i=0; i<WINDOW_SIZE; i++) {
         ab[i] = a[i] * b[i];
-        printf("a: %f, b: %f, ab: %f\n", a[i], b[i], ab[i]);
     }
 
     float mean_a = compute_mean(a);
     float mean_b = compute_mean(b);
     float mean_ab = compute_mean(ab);
     float cov = mean_ab - mean_a*mean_b;
-    printf("E[ab]: %f, E[a]: %f, E[b]: %f\n", mean_ab, mean_a, mean_b);
+    
     //compute standard deviation
     float std_a = 0.0;
     float std_b = 0.0;
@@ -226,6 +225,6 @@ float compute_energy(float complex* fft_buf) {
     for (i=0; i<WINDOW_SIZE; i++) {
         energy += pow(cabsf(fft_buf[i]), 2);         
     }
-    return energy / (float)WINDOW_SIZE;
+    return energy / (float)10000;
 }
 

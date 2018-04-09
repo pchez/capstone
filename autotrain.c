@@ -70,6 +70,8 @@ int main(int argc, char *argv[]) {
     char call_tail[128];
     char buf[128];
     float** sensors_buf;
+    float** freq_buf;
+    float* results_buf;
     float complex** fft_buf;
     float input[NUM_INPUTS];
     FILE* train_file;
@@ -95,7 +97,7 @@ int main(int argc, char *argv[]) {
     sprintf(call_shell_script, "sh motion_data.sh -t %d -f sensor_data_stream.dat", CYCLE_LENGTH);
     sprintf(call_tail, "tail -n %d sensor_data_stream.dat > motion_data.dat", SAMPLES_PER_CYCLE);
 
-    initSensorsBuf(&sensors_buf, &fft_buf, NUM_SENSORS);
+    initSensorsBuf(&sensors_buf, &fft_buf, &freq_buf, &results_buf, NUM_SENSORS);
 
     // Write header to first line
     train_file = fopen(TRAIN_FILE, "w");
@@ -150,7 +152,7 @@ int main(int argc, char *argv[]) {
     fclose(train_file);
     
     // Modify train file with number of samples actually collected
-    sprintf(buf, "sed -i 's/placeholder/%d/g' motion_data_train_file.csv", total_num_samples);
+    sprintf(buf, "sed -i 's/placeholder/%d/g' %s", total_num_samples, TRAIN_FILE);
     system(buf);
 
     return 0;
