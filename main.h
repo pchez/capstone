@@ -18,12 +18,14 @@ extern char SIGNAL_MZ[];
 #define SAMPLES_PER_CYCLE 199
 #define CYCLE_LENGTH 3
 #define WINDOW_SIZE 30
+#define HISTORY_SIZE 5
 #define FFT_SIZE (2 * WINDOW_SIZE)
 #define NUM_CLASSES 4
 #define NUM_INPUTS 12
 #define NUM_SENSORS 1
 #define NUM_CYCLES 10
 #define OUTPUT_SCORE_THRESHOLD 0.6
+#define FREQ_DIFF_THRESHOLD 2.0
 
 #define RUN_MODE 0x01
 #define PROMPT_MODE 0x02

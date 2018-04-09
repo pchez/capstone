@@ -75,22 +75,29 @@ int hex_to_decimal_time(char seq[4]) {
 	return sum1;
 }
 
-void initSensorsBuf(float*** sensors_buf, float complex*** fft_buf, int num_sensors) {
+void initSensorsBuf(float*** sensors_buf, float complex*** fft_buf, float*** freq_buf, float** results_buf, int num_sensors) {
     // init buffer of pointers to sensor values
     // 0 1 2 accel; 3 4 5 gyro; 6 7 8 mag
     float** sbuf;
+    float** freqbuf;
+    float* rbuf;
     float complex** fbuf;
     sbuf = (float**) malloc(sizeof(float*) * num_sensors * 3);
+    rbuf = (float*) malloc(sizeof(float) * HISTORY_SIZE);
+    freqbuf = (float**) malloc(sizeof(float*) * num_sensors * 3);
     fbuf = (float complex**) malloc(sizeof(float complex*) * num_sensors * 3);
     
     // allocate memory for all sensor buffers
     int i;
     for (i=0; i<num_sensors*3; i++) {
         sbuf[i] = (float*) malloc(sizeof(float) * WINDOW_SIZE);
+        freqbuf[i] = (float*) malloc(sizeof(float) * HISTORY_SIZE);
         fbuf[i] = (float complex*) malloc(sizeof(float complex) * FFT_SIZE);
     }
     *sensors_buf = sbuf;
     *fft_buf = fbuf;
+    *freq_buf = freqbuf;
+    *results_buf = rbuf;
 }
 
 void clearSensorsBuf(float** sensors_buf, float complex** fft_buf, int num_sensors) {
@@ -98,9 +105,9 @@ void clearSensorsBuf(float** sensors_buf, float complex** fft_buf, int num_senso
         memset(sensors_buf[0], 0, WINDOW_SIZE * sizeof(float)); 
         memset(sensors_buf[1], 0, WINDOW_SIZE * sizeof(float)); 
         memset(sensors_buf[2], 0, WINDOW_SIZE * sizeof(float)); 
-        memset(fft_buf[0], 0, FFT_SIZE); 
-        memset(fft_buf[1], 0, FFT_SIZE); 
-        memset(fft_buf[2], 0, FFT_SIZE); 
+        memset(fft_buf[0], 0, sizeof(float complex) * FFT_SIZE); 
+        memset(fft_buf[1], 0, sizeof(float complex) * FFT_SIZE); 
+        memset(fft_buf[2], 0, sizeof(float complex) * FFT_SIZE); 
     }
     if (num_sensors >= 2) {
         memset(sensors_buf[3], 0, WINDOW_SIZE); 
@@ -350,16 +357,45 @@ void get_all_features(float** sensors_buf, float complex** fft_buf, float* input
     input[11] = get_freq(fft_buf[2], FFT_SIZE);
 }
 
-int new_gesture_detected(float* past_frames, float result, int num_classes, int nframes) {
-    // no new frames detected yet
-    if (result > 0.6) {
-       return 0; 
+int detect_new_gesture(float** freq_buf, float* results_buf, int this_frame_index) {
+    int num_bufs = NUM_SENSORS * 3;
+    int i, j;
+    float avg = 0.0;
+    int count = 0;
+    int num_freq_above_threshold = 0;
+
+    // first check for series of missclassifications
+    for (i=0; i<HISTORY_SIZE; i++) {
+        if (results_buf[i] > OUTPUT_SCORE_THRESHOLD) {
+            return 0;
+        }
     }
-    if (nframes == 0) {
-        
+
+    // then check if similar frequency maintained
+    for (i=0; i<num_bufs; i++) {
+
+        // get avg frequency for this axis
+        avg = 0;
+        for (j=0; j<HISTORY_SIZE; j++) {
+            avg += freq_buf[i][j];
+        }
+        avg /= HISTORY_SIZE;
+
+        // compare this axis' frequency to avg
+        if (abs(freq_buf[i][this_frame_index] - avg) > FREQ_DIFF_THRESHOLD) {
+            num_freq_above_threshold++;
+        }
+
     }
-    return 1; 
+
+    if (num_freq_above_threshold > ceil(num_bufs / 2)) {
+        return 0;
+    }
+
+    return 1;
+
 }
+
 void cleanup() {
 
 	if (remove(SIGNAL_AX) != 0)

@@ -130,13 +130,11 @@ void rms_comp(float* signal, unsigned int n_samples, float * t_start, float * t_
 
 float compute_mean(float* sensors_buf) {
     int i;
-    int mean = 0.0;
+    float mean = 0.0;
     for (i=0; i<WINDOW_SIZE; i++) {
-        if (sensors_buf[i] != 0.0) {
-            mean += sensors_buf[i];
-        }    
+        mean += sensors_buf[i];
     }
-    return mean / WINDOW_SIZE;
+    return mean / (float)WINDOW_SIZE;
 }
 
 void remove_dc(float* sensors_buf) {
@@ -194,24 +192,26 @@ float compute_corr(float* a, float* b) {
     //compute covariance
     float ab[WINDOW_SIZE];
     int i;
+    printf("------------------\n");
     for (i=0; i<WINDOW_SIZE; i++) {
         ab[i] = a[i] * b[i];
+        printf("a: %f, b: %f, ab: %f\n", a[i], b[i], ab[i]);
     }
 
     float mean_a = compute_mean(a);
     float mean_b = compute_mean(b);
     float mean_ab = compute_mean(ab);
     float cov = mean_ab - mean_a*mean_b;
-
+    printf("E[ab]: %f, E[a]: %f, E[b]: %f\n", mean_ab, mean_a, mean_b);
     //compute standard deviation
     float std_a = 0.0;
     float std_b = 0.0;
     for (i=0; i<WINDOW_SIZE; i++) {
-        std_a = (a[i] - mean_a) * (a[i] - mean_a);
-        std_b = (b[i] - mean_b) * (b[i] - mean_b);
+        std_a += (a[i] - mean_a) * (a[i] - mean_a);
+        std_b += (b[i] - mean_b) * (b[i] - mean_b);
     }
-    std_a = sqrt(std_a / WINDOW_SIZE);
-    std_b = sqrt(std_b / WINDOW_SIZE);
+    std_a = sqrt(std_a / (float)WINDOW_SIZE);
+    std_b = sqrt(std_b / (float)WINDOW_SIZE);
     
     //prevent division by zero
     if (std_a == 0 || std_b == 0) {
