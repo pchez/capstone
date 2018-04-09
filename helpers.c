@@ -350,7 +350,14 @@ void get_all_features(float** sensors_buf, float complex** fft_buf, float* input
     input[11] = get_freq(fft_buf[2], FFT_SIZE);
 }
 
-int new_gesture_detected(float** sensors_buf, float complex** fft_buf, int new_gesture) {
+int new_gesture_detected(float* past_frames, float result, int num_classes, int nframes) {
+    // no new frames detected yet
+    if (result > 0.6) {
+       return 0; 
+    }
+    if (nframes == 0) {
+        
+    }
     return 1; 
 }
 void cleanup() {
