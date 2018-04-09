@@ -15,6 +15,12 @@ train:
 test: test.o $(OBJECTS) 
 	$(CC) -o test test.o $(OBJECTS) -lm -lc -lfann -lliquid
 
+main: main.o $(OBJECTS) 
+	$(CC) -o main main.o $(OBJECTS) -lm -lc -lfann -lliquid
+
+main.o: main.c
+	$(CC) $(CFLAGS) main.c
+
 autotrain.o: autotrain.c
 	$(CC) $(CFLAGS) autotrain.c
 

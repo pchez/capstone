@@ -72,7 +72,9 @@ int main(int argc, char *argv[]) {
     float** sensors_buf;
     float complex** fft_buf;
     float input[NUM_INPUTS];
-    FILE* output;
+    FILE* train_file;
+
+    //
 
 	if(argc != 3){
 		printf("Please provide cutoff frequency, number of measurement cycles, and cycle duration\n");
@@ -96,8 +98,8 @@ int main(int argc, char *argv[]) {
     initSensorsBuf(&sensors_buf, &fft_buf, NUM_SENSORS);
 
     // Write header to first line
-    output = fopen(OUTPUT_FILE, "w");
-    fprintf(output, "%s %d %d\n", "placeholder", NUM_INPUTS, NUM_CLASSES);  
+    train_file = fopen(TRAIN_FILE, "w");
+    fprintf(train_file, "%s %d %d\n", "placeholder", NUM_INPUTS, NUM_CLASSES);  
 
     for (class_index=0; class_index<NUM_CLASSES; class_index++) {    
         printf("Collecting data for class %d of %d. Press ENTER when ready.\n", class_index+1, NUM_CLASSES);
@@ -112,7 +114,7 @@ int main(int argc, char *argv[]) {
             system(call_shell_script);
             system(call_tail);
 
-            size = BLE_parse(input_file, TEST_MODE, NUM_SENSORS, sensors_buf);
+            size = BLE_parse(input_file, RUN_MODE, NUM_SENSORS, sensors_buf);
         
             if(size == 0){
                 printf("ERROR (stream_parser): BLE Data formatted incorrectly.\n");
@@ -140,17 +142,15 @@ int main(int argc, char *argv[]) {
 
             t_start = SAMPLE_PERIOD;;
             t_stop  = size*SAMPLE_PERIOD;
-           
+            
             get_all_features(sensors_buf, fft_buf, input, NUM_SENSORS, &t_start, &t_stop);
-
-            update_train_file(output, input, class_index, NUM_CLASSES);
-                
-            }
+            update_train_file(train_file, input, class_index, NUM_CLASSES);
         }
-    fclose(output);
+    }
+    fclose(train_file);
     
     // Modify train file with number of samples actually collected
-    sprintf(buf, "sed -i 's/placeholder/%d/g' motion_data_output.csv", total_num_samples);
+    sprintf(buf, "sed -i 's/placeholder/%d/g' motion_data_train_file.csv", total_num_samples);
     system(buf);
 
     return 0;

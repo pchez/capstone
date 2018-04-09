@@ -255,26 +255,34 @@ unsigned int BLE_parse(const char *inFile, int mode, int num_sensors, float** se
 	// since first line of file may be concatenated 
 	// or may contain header
 
-	unsigned int iter = 0;
-	if (mode == TRAIN_MODE) {
-        // fill buffer until full or no more data avail
-        fgets(raw, BUFF_MAX, ble_file);
-        fgets(raw, BUFF_MAX, ble_file);
-        while(fgets(raw, BUFF_MAX, ble_file)) {
-		    if(stream_parser(raw, num_sensors, sensors_buf, iter) == 0) return 0;
-            iter++;
-	    }
+    // fill buffer until full or no more data avail
+    unsigned int iter = 0;
+    fgets(raw, BUFF_MAX, ble_file);
+    fgets(raw, BUFF_MAX, ble_file);
+    while(fgets(raw, BUFF_MAX, ble_file) && iter < WINDOW_SIZE) {
+        if(stream_parser(raw, num_sensors, sensors_buf, iter) == 0) return 0;
+        iter++;
     }
-    else {
-        // fill buffer until full or no more data avail
-        fgets(raw, BUFF_MAX, ble_file);
-        fgets(raw, BUFF_MAX, ble_file);
-        while(fgets(raw, BUFF_MAX, ble_file) && iter < WINDOW_SIZE) {
-		    if(stream_parser(raw, num_sensors, sensors_buf, iter) == 0) return 0;
-            iter++;
-	    }
-
-    }
+//	unsigned int iter = 0;
+//	if (mode == TRAIN_MODE) {
+//        // fill buffer until full or no more data avail
+//        fgets(raw, BUFF_MAX, ble_file);
+//        fgets(raw, BUFF_MAX, ble_file);
+//        while(fgets(raw, BUFF_MAX, ble_file)) {
+//		    if(stream_parser(raw, num_sensors, sensors_buf, iter) == 0) return 0;
+//            iter++;
+//	    }
+//    }
+//    else {
+//        // fill buffer until full or no more data avail
+//        fgets(raw, BUFF_MAX, ble_file);
+//        fgets(raw, BUFF_MAX, ble_file);
+//        while(fgets(raw, BUFF_MAX, ble_file) && iter < WINDOW_SIZE) {
+//		    if(stream_parser(raw, num_sensors, sensors_buf, iter) == 0) return 0;
+//            iter++;
+//	    }
+//
+//    }
 	//
 	// Decrement iter to ensure that last line of file is eliminated
 	// since last line may be concatenated in data transfer
@@ -283,55 +291,27 @@ unsigned int BLE_parse(const char *inFile, int mode, int num_sensors, float** se
 	return iter--;
 }
 
-void makeCSV(unsigned int size) {
-	FILE *output = fopen(OUTPUT_FILE, "w");
-	fprintf(output, "Accel_x,Accel_y,Accel_z,Gyro_x,Gyro_y,Gyro_z,Magneto_x,Magneto_y,Magneto_z\n");
+// returns current number of inputs
+int prepare_train_file(int num_classes) {
+    FILE* old_train_file = fopen(TRAIN_FILE, "r");
+    char update_command[256];
+    // get current number of inputs, append 0 to one-hot encoded output lines to prepare for additional class
+    char raw[BUFF_MAX];
+    fgets(raw, BUFF_MAX, old_train_file);
+    char* token = strtok(raw, " "); //first token is num samples
+    int num_samples = atoi(token);
 
-	FILE * out_ax = fopen(SIGNAL_AX,"r");
-    FILE * out_ay = fopen(SIGNAL_AY,"r");
-    FILE * out_az = fopen(SIGNAL_AZ,"r");
-
-    FILE * out_gx = fopen(SIGNAL_GX,"r");
-    FILE * out_gy = fopen(SIGNAL_GY,"r");
-    FILE * out_gz = fopen(SIGNAL_GZ,"r");
-
-    FILE * out_mx = fopen(SIGNAL_MX,"r");
-    FILE * out_my = fopen(SIGNAL_MY,"r");
-    FILE * out_mz = fopen(SIGNAL_MZ,"r");
-
-    unsigned int i;
-    float ax,ay,az,gx,gy,gz,mx,my,mz;
-    for(i=0; i<size; ++i) {
-
-        fscanf(out_ax,"%f",&ax);
-        fscanf(out_ay,"%f",&ay);
-        fscanf(out_az,"%f",&az);
-
-        fscanf(out_gx,"%f",&gx);
-        fscanf(out_gy,"%f",&gy);
-        fscanf(out_gz,"%f",&gz);
-
-        fscanf(out_mx,"%f",&mx);
-        fscanf(out_my,"%f",&my);
-        fscanf(out_mz,"%f",&mz);
-
-        fprintf(output, "%f,%f,%f,%f,%f,%f,%f,%f,%f\n",ax,ay,az,gx,gy,gz,mx,my,mz);
+    // replace first line with placeholder
+    sprintf(update_command, "cp %s %s", TRAIN_FILE, NEW_TRAIN_FILE);
+    system(update_command);
+    sprintf(update_command, "sed -i '1 s/%d/placeholder/' %s", num_samples, NEW_TRAIN_FILE);
+    system(update_command);
+    sprintf(update_command, "sed -i '3~2 s/$/ 0/' %s", NEW_TRAIN_FILE);
+    system(update_command);
     
-    }
-    fclose(output);
-
-    fclose(out_ax);
-    fclose(out_ay);
-    fclose(out_az);
-
-    fclose(out_gx);
-    fclose(out_gy);
-    fclose(out_gz);
-
-    fclose(out_mx);
-    fclose(out_my);
-    fclose(out_mz);
+    return num_samples;
 }
+
 
 void get_all_features(float** sensors_buf, float complex** fft_buf, float* input, int num_sensors, float* t_start, float* t_stop) {
     float rms_signal[3]; 
@@ -368,6 +348,10 @@ void get_all_features(float** sensors_buf, float complex** fft_buf, float* input
     input[9] = get_freq(fft_buf[0], FFT_SIZE);
     input[10] = get_freq(fft_buf[1], FFT_SIZE);
     input[11] = get_freq(fft_buf[2], FFT_SIZE);
+}
+
+int new_gesture_detected(float** sensors_buf, float complex** fft_buf, int new_gesture) {
+    return 1; 
 }
 void cleanup() {
 

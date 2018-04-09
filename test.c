@@ -141,45 +141,19 @@ int main(int argc, char *argv[]) {
             
             clearSensorsBuf(sensors_buf, fft_buf, num_sensors);
            
-            size = BLE_parse(input_file, TEST_MODE, num_sensors, sensors_buf);
+            size = BLE_parse(input_file, RUN_MODE, num_sensors, sensors_buf);
             
             
             if(size == 0){
                 printf("ERROR (stream_parser): BLE Data formatted incorrectly.\n");
             }
             else {
-                remove_dc(sensors_buf[0]);
-                remove_dc(sensors_buf[1]);
-                remove_dc(sensors_buf[2]);
                 
                 // compute rms
                 t_start = SAMPLE_PERIOD;
                 t_stop = size * SAMPLE_PERIOD;
-                rms_comp(sensors_buf[0], size, &t_start, &t_stop, &rms_signal[0]);
-                rms_comp(sensors_buf[1], size, &t_start, &t_stop, &rms_signal[1]);
-                rms_comp(sensors_buf[2], size, &t_start, &t_stop, &rms_signal[2]);
-                
-                input[0] = rms_signal[0] / 1024.0;
-                input[1] = rms_signal[1] / 1024.0;
-                input[2] = rms_signal[2] / 1024.0;
-                
-                // compute correlation: cov(a,b)/(std(a)*std(b))
-                input[3] = compute_corr(sensors_buf[0], sensors_buf[1]);
-                input[4] = compute_corr(sensors_buf[0], sensors_buf[2]);
-                input[5] = compute_corr(sensors_buf[1], sensors_buf[2]);
 
-                //compute fft and energy
-                fft_comp(sensors_buf[0], fft_buf[0], WINDOW_SIZE, FFT_SIZE);
-                fft_comp(sensors_buf[1], fft_buf[1], WINDOW_SIZE, FFT_SIZE);
-                fft_comp(sensors_buf[2], fft_buf[2], WINDOW_SIZE, FFT_SIZE);
-                
-                input[6] = compute_energy(fft_buf[0]);               
-                input[7] = compute_energy(fft_buf[1]);               
-                input[8] = compute_energy(fft_buf[2]);               
-                input[9] = get_freq(fft_buf[0], FFT_SIZE);
-                input[10] = get_freq(fft_buf[1], FFT_SIZE);
-                input[11] = get_freq(fft_buf[2], FFT_SIZE);
-
+                get_all_features(sensors_buf, fft_buf, input, NUM_SENSORS, &t_start, &t_stop);
                 // feed into FANN network
                 // format: rms(3) corrs(3):xy,xz,yz energy(3) mainfreq(3)
                 calc_out = fann_run(ann, input);
