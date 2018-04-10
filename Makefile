@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-c
-SOURCES=dsp.c helpers.c preprocessing.c
+SOURCES=dsp.c helpers.c preparetrain.c 
 OBJECTS=$(SOURCES:.c=.o)
 
 autotrain: autotrain.o $(OBJECTS)
@@ -9,8 +9,8 @@ autotrain: autotrain.o $(OBJECTS)
 collect: collect.o $(OBJECTS)
 	$(CC) -o collect collect.o $(OBJECTS) -lm -lc -lliquid
 
-train:
-	$(CC) -o train train.c -lm -lfann
+train: train.o preparetrain.o
+	$(CC) -o train train.o preparetrain.o -lm -lfann
 
 test: test.o $(OBJECTS) 
 	$(CC) -o test test.o $(OBJECTS) -lm -lc -lfann -lliquid
@@ -39,8 +39,8 @@ dsp.o: dsp.c
 helpers.o: helpers.c
 	$(CC) $(CFLAGS) helpers.c
 
-preprocessing.o: preprocessing.c
-	$(CC) $(CFLAGS) preprocessing.c
+preparetrain.o: preparetrain.c
+	$(CC) $(CFLAGS) preparetrain.c
 
 clean:
 	rm *.o autotrain test train

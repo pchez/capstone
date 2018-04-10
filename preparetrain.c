@@ -6,8 +6,10 @@
 #include <liquid/liquid.h>
 #include <unistd.h>
 #include "main.h"
-#include "preprocessing.h"
+#include "preparetrain.h"
 #include "helpers.h"
+#include "../fann/src/include/fann.h"
+#include "../fann/src/include/floatfann.h"
 
 
 void encode(char* buf, int class_index, int num_classes) {
@@ -87,3 +89,24 @@ int prepare_train_file(char* curr_train_file, int num_classes) {
     
     return num_samples;
 }
+
+void train(struct fann* ann, char* train_file, char* output_net, int num_classes) {
+
+	const unsigned int num_input = 12;
+	const unsigned int num_output = num_classes;
+	const unsigned int num_layers = 3;
+	const unsigned int num_neurons_hidden = 10;
+	const float desired_error = (const float) 0.001;
+	const unsigned int max_epochs = 50000;
+	const unsigned int epochs_between_reports = 1000;
+	
+    ann = fann_create_standard(num_layers, num_input, num_neurons_hidden, num_output);
+
+	fann_set_activation_function_hidden(ann, FANN_SIGMOID);
+	fann_set_activation_function_output(ann, FANN_SIGMOID);
+    fann_train_on_file(ann, train_file, max_epochs, epochs_between_reports, desired_error);
+
+	fann_save(ann, output_net);
+    fann_destroy(ann);
+}
+

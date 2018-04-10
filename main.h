@@ -40,4 +40,6 @@ extern char SIGNAL_MZ[];
 #define TRAIN_MODE 0x04
 
 void exitHandler(char* err_string, int exit_code);
+void sigHandler(int signum);
+
 #endif
