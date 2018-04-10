@@ -28,7 +28,7 @@ extern char SIGNAL_MZ[];
 #define NUM_CLASSES 4
 #define NUM_INPUTS 12
 #define NUM_SENSORS 1
-#define NUM_CYCLES 10
+#define NUM_CYCLES 5
 
 #define MSE_THRESHOLD 0.001
 #define FREQ_DIFF_THRESHOLD 0.3
@@ -39,4 +39,5 @@ extern char SIGNAL_MZ[];
 #define PROMPT_MODE 0x02
 #define TRAIN_MODE 0x04
 
+void exitHandler(char* err_string, int exit_code);
 #endif

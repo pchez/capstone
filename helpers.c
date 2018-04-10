@@ -298,32 +298,6 @@ unsigned int BLE_parse(const char *inFile, int mode, int num_sensors, float** se
 	return iter--;
 }
 
-// returns current number of inputs
-int prepare_train_file(char* curr_train_file, int num_classes) {
-    FILE* old_train_file = fopen(curr_train_file, "r");
-    char update_command[256];
-    char raw[BUFF_MAX];
-    fgets(raw, BUFF_MAX, old_train_file);
-    char* token = strtok(raw, " "); //first token is num samples
-    int num_samples = atoi(token);
-    fclose(old_train_file);
-
-    // if currently using original train file, make a copy
-    if (strcmp(curr_train_file, ORIG_TRAIN_FILE) == 0) {
-        sprintf(update_command, "cp %s %s", ORIG_TRAIN_FILE, NEW_TRAIN_FILE);
-        system(update_command);
-    }
-    
-    // replace first line with placeholder
-    sprintf(update_command, "sed -i '1 s/%d/placeholder/' %s", num_samples, NEW_TRAIN_FILE);
-    system(update_command);
-    
-    // append 0 to one-hot encoded output lines to prepare for additional class
-    sprintf(update_command, "sed -i '3~2 s/$/ 0/' %s", NEW_TRAIN_FILE);
-    system(update_command);
-    
-    return num_samples;
-}
 
 
 void get_all_features(float** sensors_buf, float complex** fft_buf, float* input, int num_sensors, float* t_start, float* t_stop) {

@@ -9,61 +9,81 @@
 #include "preprocessing.h"
 #include "helpers.h"
 
-void normalize(float* data) {
-    *data = *data / 1024.0;
-}
 
-void encode(char* buf, int cycle_count, int num_classes) {
-    int arr[num_classes];
-    memset(arr, 0, num_classes * sizeof(int));
-    arr[cycle_count] = 1;
-    sprintf(buf, "%d %d %d %d", arr[0], arr[1], arr[2], arr[3]);
-    return buf;
-}
-
-void compute_average(unsigned int size, float* outbuf) {
-
-    FILE * out_ax = fopen(SIGNAL_AX,"r");
-    FILE * out_ay = fopen(SIGNAL_AY,"r");
-    FILE * out_az = fopen(SIGNAL_AZ,"r");
-
-    unsigned int i;
-    float ax,ay,az;
-    float ax_avg = 0;
-    float ay_avg = 0;
-    float az_avg = 0;
-    for(i=0; i<size; ++i) {
-    
-        fscanf(out_ax,"%f",&ax);
-        fscanf(out_ay,"%f",&ay);
-        fscanf(out_az,"%f",&az);
-        
-        ax_avg += ax;
-        ay_avg += ay;
-        az_avg += az;
+void encode(char* buf, int class_index, int num_classes) {
+    int i;
+    strcpy(buf, "");
+    for (i=0; i<num_classes; i++) {
+        if (i != 0) {
+            strcat(buf, " ");
+        }
+        if (i == class_index) {
+            strcat(buf, "1");
+        }
+        else {
+            strcat(buf, "0");
+        }
     }
-
-    ax_avg /= size;
-    ay_avg /= size;
-    az_avg /= size;
-   
-    normalize(&ax_avg);
-    normalize(&ay_avg);
-    normalize(&az_avg);
-
-    outbuf[0] = ax_avg;
-    outbuf[1] = ay_avg;
-    outbuf[2] = az_avg;
-    
-    fclose(out_ax);
-    fclose(out_ay);
-    fclose(out_az);
 }
 
-void update_train_file(FILE* output_file, float* input, int cycle_count, int nclasses) {
-    char* encoded_output = encode(cycle_count, nclasses);      
-    fprintf(output_file, "%f %f %f %f %f %f %f %f %f %f %f %f\n",input[0],input[1],input[2],input[3],input[4],input[5],input[6],input[7],input[8],input[9],input[10],input[11]);
-    fprintf(output_file, "%s\n", encoded_output);
-    printf("%f %f %f %f %f %f %f %f %f %f %f %f\n",input[0],input[1],input[2],input[3],input[4],input[5],input[6],input[7],input[8],input[9],input[10],input[11]);
+void buf_to_string(char* buf, float* input, int num_inputs) {
+    int i;
+    char float_buf[30];
+    strcpy(float_buf, "");
+    strcpy(buf, "");
+    for (i=0; i<num_inputs; i++) {
+        if (i != 0) {
+            strcat(buf, " ");
+        }
+        sprintf(float_buf, "%f", input[i]);
+        strcat(buf, float_buf);
+    }
+}
+
+void update_train_file(FILE* train_file, float* input, int class_index, int num_classes) {
+    char encoded_output[80];
+    char buf[512];
+    
+    encode(encoded_output, class_index, num_classes);      
+    buf_to_string(buf, input, NUM_INPUTS);
+    
+    fprintf(train_file, "%s\n", buf);
+    fprintf(train_file, "%s\n", encoded_output);
    
+}
+
+// returns current number of inputs
+int prepare_train_file(char* curr_train_file, int num_classes) {
+    FILE* old_train_file = fopen(curr_train_file, "r");
+    char update_command[256];
+    char raw[BUFF_MAX];
+
+    // read existing number of samples from first token
+    fgets(raw, BUFF_MAX, old_train_file);
+    char* token = strtok(raw, " "); 
+    int num_samples = atoi(token);
+    
+    // read existing number of classes from third token
+    token = strtok(NULL, " "); 
+    token = strtok(NULL, " "); 
+    int old_num_classes = atoi(token);
+    fclose(old_train_file);
+
+    // if currently using original train file, make a copy
+    if (strcmp(curr_train_file, ORIG_TRAIN_FILE) == 0) {
+        sprintf(update_command, "cp %s %s", ORIG_TRAIN_FILE, NEW_TRAIN_FILE);
+        system(update_command);
+    }
+    
+    // replace first line with placeholders
+    sprintf(update_command, "sed -i '1 s/%d/nsamples/' %s", num_samples, NEW_TRAIN_FILE);
+    system(update_command);
+    sprintf(update_command, "sed -i '1 s/%d/nclasses/' %s", old_num_classes, NEW_TRAIN_FILE);
+    system(update_command);
+    
+    // append 0 to one-hot encoded output lines to prepare for additional class
+    sprintf(update_command, "sed -i '3~2 s/$/ 0/' %s", NEW_TRAIN_FILE);
+    system(update_command);
+    
+    return num_samples;
 }

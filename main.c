@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
     char cmd_buf[128];
     float max;
     int i;
-    uint8_t mode = 0x01;
+    uint8_t mode = RUN_MODE;
     int new_gesture = 0;
     int hist_buf_full = 0;
     int hist_buf_index = 0;
@@ -209,12 +209,18 @@ int main(int argc, char *argv[]) {
                         result = i;
                     }
                 }   
+                printf("\n");
+                
+                // print and compare to expected output
                 float test_output[num_classes];
                 memset(test_output, 0, sizeof(float)*num_classes);
                 test_output[result] = 1.0;
                 fann_test(ann, input, test_output); 
+                printf("expected: ");
+                for (i=0; i<num_classes; i++) {
+                    printf("%f ", test_output[i]);
+                }   
                 printf("\n");
-                printf("expected: %f %f %f %f\n", test_output[0],test_output[1],test_output[2],test_output[3]);
                 printf("result: %d, MSE: %f\n", result, fann_get_MSE(ann));
                 
                 // fill history buffers and detect gestures
@@ -248,7 +254,7 @@ int main(int argc, char *argv[]) {
                 
             }
             if ((mode & PROMPT_MODE) == 0x02) {
-                printf("New gesture detected. Press button to train\n");
+                printf("New gesture detected.\n");
                 // button press handled in interrupt 
                  mode = TRAIN_MODE;
                 // set new_gesture_detected to 0 if transition to train mode
@@ -260,26 +266,31 @@ int main(int argc, char *argv[]) {
                     num_classes++;
                     printf("Collect data for new gesture. Press ENTER when ready.\n");
                     getchar();
-                    curr_train_file = fopen(NEW_TRAIN_FILE, "a");
                     total_num_samples = prepare_train_file(curr_train_filename, num_classes);
+                    curr_train_file = fopen(NEW_TRAIN_FILE, "a");
+                    curr_train_filename = NEW_TRAIN_FILE;
                 }
                 if (cycle_count < NUM_CYCLES) {
+                    
                     printf("Cycle %i of %i \n", cycle_count + 1, NUM_CYCLES);
                     get_all_features(sensors_buf, fft_buf, input, NUM_SENSORS, &t_start, &t_stop);
-                    update_train_file(train_file, input, class_index, num_classes);
+                    update_train_file(curr_train_file, input, num_classes-1, num_classes);
                     cycle_count++;
                 }
                 else {
-                    // train network
-                    // train() updates ann below
+                    // train network, update fann file
                     fclose(curr_train_file);
                     total_num_samples += cycle_count;
-                    sprintf(cmd_buf, "sed -i 's/placeholder/%d/g' %s", total_num_samples, NEW_TRAIN_FILE);
+                    sprintf(cmd_buf, "sed -i 's/nsamples/%d/g' %s", total_num_samples, NEW_TRAIN_FILE);
                     system(cmd_buf);
+                    sprintf(cmd_buf, "sed -i 's/nclasses/%d/g' %s", num_classes, NEW_TRAIN_FILE);
+                    system(cmd_buf);
+                    fann_destroy(ann);
                     train(ann, NEW_TRAIN_FILE, NEW_FANN_FILE, num_classes); 
+                    printf("num fann output in main: %d\n", fann_get_num_output(ann)); 
+                    ann = fann_create_from_file(NEW_FANN_FILE);
                     
                     // reset/update program states
-                    curr_train_filename = NEW_TRAIN_FILE;
                     cycle_count = 0;
                     memset(results_buf, 0, HISTORY_SIZE * sizeof(float));
                     for (i=0; i<NUM_SENSORS * 3; i++) {
