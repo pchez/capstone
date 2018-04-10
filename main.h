@@ -12,8 +12,11 @@ extern char SIGNAL_MY[];
 extern char SIGNAL_MZ[];
 
 #define BUFF_MAX 256
-#define TRAIN_FILE "motion_data_output.csv"
-#define NEW_TRAIN_FILE "train_motion.csv"
+#define RAW_INPUT_FILE "motion_data.dat"
+#define ORIG_TRAIN_FILE "train_orig.csv"
+#define NEW_TRAIN_FILE "train_new.csv"
+#define ORIG_FANN_FILE "fann_motion_orig.net"
+#define NEW_FANN_FILE "fann_motion_new.net"
 
 #define SAMPLE_PERIOD 0.050
 #define SAMPLES_PER_CYCLE 199

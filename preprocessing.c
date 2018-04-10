@@ -13,10 +13,9 @@ void normalize(float* data) {
     *data = *data / 1024.0;
 }
 
-char* encode(int cycle_count, int nclasses) {
-    char* buf = (char*) malloc(30);
-    int8_t* arr = (int8_t*) malloc(nclasses * sizeof(int8_t));
-    memset(arr, 0, nclasses * sizeof(int8_t));
+void encode(char* buf, int cycle_count, int num_classes) {
+    int arr[num_classes];
+    memset(arr, 0, num_classes * sizeof(int));
     arr[cycle_count] = 1;
     sprintf(buf, "%d %d %d %d", arr[0], arr[1], arr[2], arr[3]);
     return buf;

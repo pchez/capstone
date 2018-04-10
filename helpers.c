@@ -299,20 +299,26 @@ unsigned int BLE_parse(const char *inFile, int mode, int num_sensors, float** se
 }
 
 // returns current number of inputs
-int prepare_train_file(int num_classes) {
-    FILE* old_train_file = fopen(TRAIN_FILE, "r");
+int prepare_train_file(char* curr_train_file, int num_classes) {
+    FILE* old_train_file = fopen(curr_train_file, "r");
     char update_command[256];
-    // get current number of inputs, append 0 to one-hot encoded output lines to prepare for additional class
     char raw[BUFF_MAX];
     fgets(raw, BUFF_MAX, old_train_file);
     char* token = strtok(raw, " "); //first token is num samples
     int num_samples = atoi(token);
+    fclose(old_train_file);
 
+    // if currently using original train file, make a copy
+    if (strcmp(curr_train_file, ORIG_TRAIN_FILE) == 0) {
+        sprintf(update_command, "cp %s %s", ORIG_TRAIN_FILE, NEW_TRAIN_FILE);
+        system(update_command);
+    }
+    
     // replace first line with placeholder
-    sprintf(update_command, "cp %s %s", TRAIN_FILE, NEW_TRAIN_FILE);
-    system(update_command);
     sprintf(update_command, "sed -i '1 s/%d/placeholder/' %s", num_samples, NEW_TRAIN_FILE);
     system(update_command);
+    
+    // append 0 to one-hot encoded output lines to prepare for additional class
     sprintf(update_command, "sed -i '3~2 s/$/ 0/' %s", NEW_TRAIN_FILE);
     system(update_command);
     
@@ -380,31 +386,13 @@ int detect_new_gesture(float** freq_buf, float* results_buf, int this_frame_inde
     float std;
     for (i=0; i<num_bufs; i++) {
         std = compute_std(freq_buf[i], HISTORY_SIZE);
-        printf("mean freq: %f std: %f", mean, std);  
+        printf("mean freq: %f std: %f\n", mean, std);  
        // if std dev below threshold, is periodic
        if (std < STDDEV_THRESHOLD) {
             num_periodic++;
        }
     }
     printf("\n");
-//    // then check if similar frequency maintained
-//    for (i=0; i<num_bufs; i++) {
-//
-//        // get avg frequency for this axis
-//        avg = 0;
-//        for (j=0; j<HISTORY_SIZE; j++) {
-//            avg += freq_buf[i][j];
-//        }
-//        avg /= (float)HISTORY_SIZE;
-//
-//        // compare this axis' frequency to avg. if below threshold, is periodic
-//        if (fabs(freq_buf[i][this_frame_index] - avg) < FREQ_DIFF_THRESHOLD) {
-//            printf("abs: %f threshold: %f\n",fabs(freq_buf[i][this_frame_index] - avg),FREQ_DIFF_THRESHOLD); 
-//            num_periodic++;
-//        }
-//
-//    }
-    
     // if not enough axes show periodicity, not a new gesture
     if (num_periodic < num_bufs-1) {
         return 0;
