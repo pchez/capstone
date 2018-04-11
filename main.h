@@ -26,7 +26,7 @@ extern char SIGNAL_MZ[];
 #define HISTORY_SIZE 5
 #define FFT_SIZE (2 * WINDOW_SIZE)
 
-#define NUM_CLASSES 8
+#define NUM_CLASSES 4 
 #define NUM_INPUTS 12
 #define NUM_SENSORS 1
 #define NUM_CYCLES 10 
