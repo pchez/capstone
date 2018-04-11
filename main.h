@@ -15,7 +15,6 @@ extern char SIGNAL_MZ[];
 #define RAW_INPUT_FILE "motion_data.dat"
 #define ORIG_TRAIN_FILE "train_orig.csv"
 #define NEW_TRAIN_FILE "train_new.csv"
-//#define ORIG_FANN_FILE "fann_motion_new.net"
 #define ORIG_FANN_FILE "fann_motion_orig.net"
 #define NEW_FANN_FILE "fann_motion_new.net"
 
