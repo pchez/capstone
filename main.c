@@ -236,16 +236,16 @@ int main(int argc, char *argv[]) {
             if ((mode & PROMPT_MODE) == 0x02) {
                 printf("New gesture detected.\n");
                 // button press handled in interrupt 
-                 mode = TRAIN_MODE;
+                mode = TRAIN_MODE;
+                printf("Collect data for new gesture. Press ENTER when ready.\n");
+                getchar();
                 // set new_gesture_detected to 0 if transition to train mode
             } 
-            if ((mode & TRAIN_MODE) == 0x04) {
+            else if ((mode & TRAIN_MODE) == 0x04) {
                 new_gesture_detected = 0;
                 if (cycle_count == 0) {    
                     mode = TRAIN_MODE;
                     num_classes++;
-                    printf("Collect data for new gesture. Press ENTER when ready.\n");
-                    getchar();
                     total_num_samples = prepare_train_file(curr_train_filename, num_classes);
                     curr_train_file = fopen(NEW_TRAIN_FILE, "a");
                     curr_train_filename = NEW_TRAIN_FILE;

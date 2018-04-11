@@ -360,9 +360,11 @@ int detect_new_gesture(float** freq_buf, float* results_buf, int this_frame_inde
     float std;
     for (i=0; i<num_bufs; i++) {
         std = compute_std(freq_buf[i], HISTORY_SIZE);
+        mean = compute_mean(freq_buf[i], HISTORY_SIZE);
         printf("mean freq: %f std: %f\n", mean, std);  
-       // if std dev below threshold, is periodic
-       if (std < STDDEV_THRESHOLD) {
+       // if std dev below threshold and there is significant movement 
+       // then the movement is periodic
+       if (std < STDDEV_THRESHOLD && mean > FREQ_THRESHOLD) {
             num_periodic++;
        }
     }

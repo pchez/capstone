@@ -15,6 +15,7 @@ extern char SIGNAL_MZ[];
 #define RAW_INPUT_FILE "motion_data.dat"
 #define ORIG_TRAIN_FILE "train_orig.csv"
 #define NEW_TRAIN_FILE "train_new.csv"
+//#define ORIG_FANN_FILE "fann_motion_new.net"
 #define ORIG_FANN_FILE "fann_motion_orig.net"
 #define NEW_FANN_FILE "fann_motion_new.net"
 
@@ -25,13 +26,13 @@ extern char SIGNAL_MZ[];
 #define HISTORY_SIZE 5
 #define FFT_SIZE (2 * WINDOW_SIZE)
 
-#define NUM_CLASSES 4
+#define NUM_CLASSES 8
 #define NUM_INPUTS 12
 #define NUM_SENSORS 1
-#define NUM_CYCLES 5
+#define NUM_CYCLES 10 
 
 #define MSE_THRESHOLD 0.001
-#define FREQ_DIFF_THRESHOLD 0.3
+#define FREQ_THRESHOLD 1.0
 #define STDDEV_THRESHOLD 1.0
 
 #define DETECT_NEW_GESTURES_ON 1
